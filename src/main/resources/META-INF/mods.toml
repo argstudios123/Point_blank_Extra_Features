@@ -1,0 +1,46 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="pointblankextra"
+version="${mod_version}"
+displayName="Point Blank Extra Features"
+authors="Laiden Smith"
+description='''Creator-focused extra features for Vics Point Blank.'''
+
+# NOTE: Forge 1.20.1 does NOT read "[[mixins]]" (it is a NeoForge-only key and is
+# silently ignored). Mixins are registered for Forge 1.20.1 through the JAR
+# MANIFEST "MixinConfigs" attribute in src/main/resources/META-INF/MANIFEST.MF
+# (dev) and in the `jar` task in build.gradle (release). This block is kept only
+# for forward-compatibility if the project is ever ported to NeoForge.
+[[mixins]]
+config="pointblankextra.mixins.json"
+
+[[dependencies.pointblankextra]]
+modId="forge"
+mandatory=true
+versionRange="[47.4.23,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.pointblankextra]]
+modId="minecraft"
+mandatory=true
+versionRange="[1.20.1,1.21)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.pointblankextra]]
+modId="pointblank"
+mandatory=true
+versionRange="[2.2.0,)"
+ordering="AFTER"
+side="BOTH"
+
+[[dependencies.pointblankextra]]
+modId="geckolib"
+mandatory=true
+versionRange="[4.8.4,5)"
+ordering="AFTER"
+side="BOTH"

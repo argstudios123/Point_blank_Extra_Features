@@ -1,0 +1,52 @@
+Point Blank Extra Features
+==========================
+
+- Per-weapon toggle aiming ("toggle_aiming": "enabled").
+- Per-weapon melee attack ("melee": { enabled, damage, cooldown, reach, animations }).
+- Melee keybind (default V, rebindable) under "Point Blank Extra Features".
+- Server-authoritative melee damage with reach/cooldown validation.
+- Random melee animation selection from an arbitrary-length animation list.
+- Dedicated, non-interfering GeckoLib melee animation controller.
+- Weapon JSON indexed from Point Blank extensions + built-in resources.
+- Per-weapon "disableAdsDuringreload" (top-level): ADS is released and blocked
+  for the whole reload, then becomes available again (never auto re-entered).
+- AdsConstraint "cameraConstraint" (0..1, optional): the retained fraction of the camera's
+  animated movement while ADS - 0.6 keeps 60% of it, 1.0 disables the constraint, 0.0 pins
+  the camera pose while aiming. Without cameraConstraint the camera keeps using the same
+  per-axis fractions as the weapon root. The root constraint is unchanged.
+- AdsReloadZoomControl "zoom_type" (linear/smooth/ease_*/sine_*, default smooth)
+  and "amount": eased reload zoom relaxation over a fixed 200 ms window that
+  begins with the current reload and is held until it ends, relative to the
+  current ADS zoom and smoothly restored afterwards.
+- Global Water/Lava impact particles (config/pointblankextra-client.toml ->
+  enableWaterLavaImpactParticles, default true): extra vanilla splash and bubble
+  particles at the exact impact position reported by the hit when a Point Blank
+  hitscan or projectile hits a block in water (no surface snapping), and lava and
+  smoke particles when it hits a block in lava.
+  Additive only: Point Blank's BlockHitEvent is never cancelled and its damage,
+  explosions, smoke and block-hit behavior are unchanged; dry-block hits and
+  default behavior are unaffected.
+- Camera handling: the weapon model's "_camera_" bone *is* Point Blank's first-person camera
+  animation - GunItemRenderer#renderRecursively captures its rotation while the weapon is
+  rendered and ClientEventHandler#onPreRenderHandEvent applies it to the first-person view.
+  The bone is never reset to its bind pose, and the camera constraint never works from its
+  own previous result: it scales only the pose the animation just wrote, once, and only while
+  ADS is active. Equip/draw, idle, firing, reload and inspect camera movement is therefore
+  preserved, no rotation accumulates over frames and no offset is left on the view. The
+  weapon root constraint is unchanged.
+- Reserve ammo counter (config/pointblankextra-client.toml -> reserveAmmoCounter,
+  default true): Point Blank's ammo counter now shows loaded/compatible reserve
+  ammunition (for example 8/120) instead of loaded/magazine capacity. Both of
+  Point Blank's counter implementations are covered - weapons with a custom Ammo
+  UI definition and every weapon that uses the default ammo indicator - and each
+  weapon is read against its own compatible ammo configuration. Creative mode
+  displays 9999 as a placeholder for unlimited reserve. Display only: no
+  ammunition, magazine capacity or firing/reloading behavior is changed, and the
+  loaded-ammo number keeps rendering exactly as before.
+  The setting is part of the mod's normal Forge configuration
+  (config/pointblankextra-client.toml) and is re-read as soon as it is changed - no
+  restart is needed - while the enableMod master switch keeps disabling everything.
+
+Toggle aiming is now per-weapon (JSON) instead of a global client toggle.
+The melee feature is new.
+

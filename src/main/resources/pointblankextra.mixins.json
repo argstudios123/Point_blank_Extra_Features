@@ -1,0 +1,28 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.argos.pbextra.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client": [
+    "ClientEventHandlerMixin",
+    "GunItemOverlayReserveAmmoMixin",
+    "AdsConstraintProcessorMixin",
+    "AdsReloadZoomControlMixin",
+    "NoADSDuringInspectMixin",
+    "NoADSDuringInspectBlockMixin",
+    "NoADSDuringReloadMixin",
+    "NoADSDuringReloadBlockMixin"
+  ],
+  "mixins": [
+    "GunItemMeleeControllerMixin",
+    "SoundFeatureAccessor",
+    "SoundFeatureRandomFireSoundMixin",
+    "FeatureConditionJsonMixin",
+    "FeatureConditionJsonExtraMixin",
+    "ConditionsCarrierMixin",
+    "FireModeInfiniteAmmoCapacityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

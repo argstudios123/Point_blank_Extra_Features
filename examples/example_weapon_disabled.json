@@ -1,0 +1,29 @@
+{
+  "type": "gun",
+  "name": "example_weapon_disabled",
+
+  "toggle_aiming": "disabled",
+
+  "maxAmmoCapacity": 30,
+  "damage": 6.0,
+  "rpm": 700,
+  "fireSound": "ak12",
+  "fireModes": [
+    "SINGLE",
+    "AUTOMATIC"
+  ],
+  "compatibleAmmo": [
+    "ammocreative",
+    "ammo556"
+  ],
+  "features": [
+    {
+      "type": "AIMING",
+      "zoom": 0.25
+    }
+  ],
+
+  "melee": {
+    "enabled": false
+  }
+}

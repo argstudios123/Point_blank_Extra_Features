@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import com.arg.pbextra.melee.MeleeAnimationController;
 import com.arg.pbextra.melee.MeleeConstants;
 import com.arg.pbextra.melee.MeleeImpactPacket;
-import com.arg.pbextra.network.ModNetwork;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.registry.SoundRegistry;
 import net.minecraft.client.Minecraft;
@@ -12,11 +11,12 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
-import software.bernie.geckolib.core.animatable.GeoAnimatable;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.keyframe.event.SoundKeyframeEvent;
+import software.bernie.geckolib.animatable.GeoAnimatable;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.keyframe.event.SoundKeyframeEvent;
 
 import java.util.Locale;
 import java.util.Map;
@@ -120,7 +120,7 @@ public final class MeleeAnimationHandler {
 
         if (!impactAnnounced && positionMillis >= preMeleeMillis) {
             impactAnnounced = true;
-            ModNetwork.CHANNEL.sendToServer(new MeleeImpactPacket(activeAnimationName));
+            PacketDistributor.sendToServer(new MeleeImpactPacket(activeAnimationName));
             LOGGER.info("Melee '{}' reached its impact at animation time {} ms (preMelee {} ms)",
                     activeAnimationName, format(positionMillis), preMeleeMillis);
         }

@@ -9,7 +9,7 @@ import com.vicmatskiv.pointblank.registry.AmmoUiDefinition;
 import com.vicmatskiv.pointblank.registry.AmmoUiRegistry;
 import com.vicmatskiv.pointblank.registry.HeatUiDefinition;
 import com.vicmatskiv.pointblank.registry.HeatUiRegistry;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.io.IOException;
 import java.io.Reader;

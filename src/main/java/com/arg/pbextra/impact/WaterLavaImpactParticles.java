@@ -2,7 +2,9 @@ package com.arg.pbextra.impact;
 
 import com.arg.pbextra.PointBlankExtraFeatures;
 import com.arg.pbextra.config.PointBlankExtraConfig;
+import com.vicmatskiv.pointblank.Platform;
 import com.vicmatskiv.pointblank.event.BlockHitEvent;
+import com.vicmatskiv.pointblank.event.SubscribeEvent2;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -16,8 +18,9 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 
 public final class WaterLavaImpactParticles {
@@ -40,116 +43,146 @@ public final class WaterLavaImpactParticles {
     private WaterLavaImpactParticles() {
     }
 
-    @Mod.EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
-            bus = Mod.EventBusSubscriber.Bus.FORGE)
-    public static final class ForgeBus {
+    /** Runs after every mod has been constructed, so Point Blank's event bus exists. */
+    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
+    public static final class ModBus {
 
         @SubscribeEvent
-        public static void onBlockHit(BlockHitEvent event) {
-            if (!isEnabled()) {
-                return;
-            }
+        public static void onCommonSetup(FMLCommonSetupEvent event) {
+            event.enqueueWork(WaterLavaImpactParticles::install);
+        }
+    }
 
-            // Another mod consumed the impact; leave that decision alone.
-            if (event.isCanceled()) {
-                return;
-            }
+    /**
+     * Point Blank 2.2.0 for NeoForge 1.21.1 dispatches its {@code BlockHitEvent} on its
+     * own event bus ({@code Platform#getEventBus}) instead of the NeoForge bus, so the
+     * listener object is registered there. The event is only observed - it is never
+     * cancelled - so Point Blank's own block-hit behaviour stays untouched.
+     */
+    private static void install() {
+        try {
+            Platform.getInstance().getEventBus().register(new BlockHitListener());
+        } catch (RuntimeException exception) {
+            PointBlankExtraFeatures.LOGGER.warn(
+                    "Could not register the Water/Lava impact particle listener on Point Blank's "
+                            + "event bus; water and lava impact particles are disabled ({})",
+                    exception.toString());
+        }
+    }
 
-            BlockHitResult hitResult = event.getBlockHitResult();
-            if (hitResult == null || hitResult.getType() != HitResult.Type.BLOCK) {
-                return;
-            }
+    /** Point Blank event listener object expected by {@code Platform#getEventBus()}. */
+    public static final class BlockHitListener {
 
-            Entity projectile = event.getProjectile();
-            Entity source = projectile != null ? projectile : event.getPlayer();
-            if (source == null) {
-                return;
-            }
+        @SubscribeEvent2
+        public void onBlockHit(BlockHitEvent event) {
+            handleBlockHit(event);
+        }
+    }
 
-            Level level = source.level();
-            if (!(level instanceof ServerLevel serverLevel)) {
-                return;
-            }
-
-            BlockPos fluidPos = fluidPosOf(level,
-                    hitResult.getBlockPos(),
-                    hitResult.getDirection());
-            if (fluidPos == null) {
-                return;
-            }
-
-            FluidState fluid = level.getFluidState(fluidPos);
-            if (fluid.is(FluidTags.WATER)) {
-                Vec3 impact = hitResult.getLocation();
-                Vec3 surface = waterSurfaceCrossing(serverLevel, source, projectile, event.getPlayer(), impact);
-                spawnWater(serverLevel, impact, surface == null ? impact : surface);
-            } else if (fluid.is(FluidTags.LAVA)) {
-                spawnLava(serverLevel, hitResult.getLocation());
-            }
+    private static void handleBlockHit(BlockHitEvent event) {
+        if (!isEnabled()) {
+            return;
         }
 
-
-        private static void spawnWater(ServerLevel level, Vec3 impact, Vec3 splashLocation) {
-
-            level.sendParticles(ParticleTypes.SPLASH,
-                    splashLocation.x, splashLocation.y, splashLocation.z,
-                    SPLASH_PARTICLES, SPLASH_SPREAD, SPLASH_SPREAD, SPLASH_SPREAD, SPLASH_SPEED);
-
-
-            level.sendParticles(ParticleTypes.BUBBLE,
-                    impact.x, impact.y, impact.z,
-                    BUBBLE_PARTICLES, SPREAD, SPREAD, SPREAD, BUBBLE_SPEED);
+        // Another mod consumed the impact; leave that decision alone.
+        if (event.isCanceled()) {
+            return;
         }
 
-
-
-        private static Vec3 waterSurfaceCrossing(ServerLevel level, Entity source, Entity projectile,
-                                                 LivingEntity shooter, Vec3 impact) {
-            // For hitscan shots the ray starts at the shooter's eye, exactly like Point Blank's
-            // own hitscan. For projectiles the entity is still at the start of the segment it just
-            // travelled (Point Blank moves it after the impact is handled), so its position is the
-            // real start of the shot's path.
-            Vec3 origin = projectile != null
-                    ? projectile.position()
-                    : (shooter != null ? shooter.getEyePosition() : null);
-            if (origin == null) {
-                return null;
-            }
-
-            if (isWater(level, origin)) {
-                return null;
-            }
-
-            BlockHitResult crossing = level.clip(new ClipContext(origin, impact,
-                    ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, source));
-
-            if (crossing.getType() != HitResult.Type.BLOCK
-                    || !isWater(level, crossing.getBlockPos())
-                    || crossing.getLocation().distanceToSqr(impact) < 1.0E-4D) {
-                return null;
-            }
-
-            return crossing.getLocation();
+        BlockHitResult hitResult = event.getBlockHitResult();
+        if (hitResult == null || hitResult.getType() != HitResult.Type.BLOCK) {
+            return;
         }
 
-
-        private static boolean isWater(Level level, Vec3 position) {
-            return isWater(level, BlockPos.containing(position.x, position.y, position.z));
+        Entity projectile = event.getProjectile();
+        Entity source = projectile != null ? projectile : event.getPlayer();
+        if (source == null) {
+            return;
         }
 
-
-        private static boolean isWater(Level level, BlockPos pos) {
-            return level.getFluidState(pos).is(FluidTags.WATER);
+        Level level = source.level();
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
         }
 
-        private static void spawnLava(ServerLevel level, Vec3 location) {
-            level.sendParticles(ParticleTypes.LAVA,
-                    location.x, location.y, location.z,
-                    LAVA_PARTICLES, SPREAD, SPREAD, SPREAD, LAVA_SPEED);
-            level.sendParticles(ParticleTypes.LARGE_SMOKE,
-                    location.x, location.y, location.z,
-                    LAVA_SMOKE_PARTICLES, SPREAD, SPREAD, SPREAD, LAVA_SMOKE_SPEED);
+        BlockPos fluidPos = fluidPosOf(level,
+                hitResult.getBlockPos(),
+                hitResult.getDirection());
+        if (fluidPos == null) {
+            return;
         }
+
+        FluidState fluid = level.getFluidState(fluidPos);
+        if (fluid.is(FluidTags.WATER)) {
+            Vec3 impact = hitResult.getLocation();
+            Vec3 surface = waterSurfaceCrossing(serverLevel, source, projectile, event.getPlayer(), impact);
+            spawnWater(serverLevel, impact, surface == null ? impact : surface);
+        } else if (fluid.is(FluidTags.LAVA)) {
+            spawnLava(serverLevel, hitResult.getLocation());
+        }
+    }
+
+
+    private static void spawnWater(ServerLevel level, Vec3 impact, Vec3 splashLocation) {
+
+        level.sendParticles(ParticleTypes.SPLASH,
+                splashLocation.x, splashLocation.y, splashLocation.z,
+                SPLASH_PARTICLES, SPLASH_SPREAD, SPLASH_SPREAD, SPLASH_SPREAD, SPLASH_SPEED);
+
+
+        level.sendParticles(ParticleTypes.BUBBLE,
+                impact.x, impact.y, impact.z,
+                BUBBLE_PARTICLES, SPREAD, SPREAD, SPREAD, BUBBLE_SPEED);
+    }
+
+
+
+    private static Vec3 waterSurfaceCrossing(ServerLevel level, Entity source, Entity projectile,
+                                             LivingEntity shooter, Vec3 impact) {
+        // For hitscan shots the ray starts at the shooter's eye, exactly like Point Blank's
+        // own hitscan. For projectiles the entity is still at the start of the segment it just
+        // travelled (Point Blank moves it after the impact is handled), so its position is the
+        // real start of the shot's path.
+        Vec3 origin = projectile != null
+                ? projectile.position()
+                : (shooter != null ? shooter.getEyePosition() : null);
+        if (origin == null) {
+            return null;
+        }
+
+        if (isWater(level, origin)) {
+            return null;
+        }
+
+        BlockHitResult crossing = level.clip(new ClipContext(origin, impact,
+                ClipContext.Block.COLLIDER, ClipContext.Fluid.ANY, source));
+
+        if (crossing.getType() != HitResult.Type.BLOCK
+                || !isWater(level, crossing.getBlockPos())
+                || crossing.getLocation().distanceToSqr(impact) < 1.0E-4D) {
+            return null;
+        }
+
+        return crossing.getLocation();
+    }
+
+
+    private static boolean isWater(Level level, Vec3 position) {
+        return isWater(level, BlockPos.containing(position.x, position.y, position.z));
+    }
+
+
+    private static boolean isWater(Level level, BlockPos pos) {
+        return level.getFluidState(pos).is(FluidTags.WATER);
+    }
+
+    private static void spawnLava(ServerLevel level, Vec3 location) {
+        level.sendParticles(ParticleTypes.LAVA,
+                location.x, location.y, location.z,
+                LAVA_PARTICLES, SPREAD, SPREAD, SPREAD, LAVA_SPEED);
+        level.sendParticles(ParticleTypes.LARGE_SMOKE,
+                location.x, location.y, location.z,
+                LAVA_SMOKE_PARTICLES, SPREAD, SPREAD, SPREAD, LAVA_SMOKE_SPEED);
     }
 
 

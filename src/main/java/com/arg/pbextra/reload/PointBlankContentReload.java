@@ -3,15 +3,21 @@ package com.arg.pbextra.reload;
 import com.arg.pbextra.PointBlankExtraFeatures;
 import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.arg.pbextra.uieditor.GeneratedUiStore;
+import com.vicmatskiv.pointblank.Platform;
+import com.vicmatskiv.pointblank.event.AddPackFindersEvent;
+import com.vicmatskiv.pointblank.event.EventListener;
 import com.vicmatskiv.pointblank.registry.AmmoUiDefinition;
 import com.vicmatskiv.pointblank.registry.AmmoUiRegistry;
 import com.vicmatskiv.pointblank.registry.HeatUiDefinition;
 import com.vicmatskiv.pointblank.registry.HeatUiRegistry;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.PackType;
+import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,10 +28,13 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 
@@ -43,35 +52,69 @@ public final class PointBlankContentReload {
     /**
      * Whether Point Blank's own weapon JSON can be re-applied without restarting.
      * <p>
-     * Point Blank 2.2.0 parses every weapon JSON into {@code GunItem} instances while
-     * the Forge item registry is being built ({@code PointBlankMod}'s constructor calls
-     * {@code ExtensionRegistry.discoverExtensions} followed by
-     * {@code ExtensionRegistry.registerItemsFromExtensions}), and it bakes the parsed
-     * values - damage, rpm, magazine capacity, compatible ammunition, fire modes, the
-     * ammo UI reference and the animation definitions - into {@code GunItem}'s fields.
+     * Point Blank 2.2.0 for NeoForge 1.21.1 parses every weapon JSON into
+     * {@code GunItem} instances while the item registry is being built
+     * ({@code PointBlankInitializer.init()} calls {@code ExtensionRegistry.discoverExtensions}
+     * followed by {@code ExtensionRegistry.registerItemsFromExtensions}), and it bakes the
+     * parsed values - damage, rpm, magazine capacity, compatible ammunition, fire modes,
+     * the ammo UI reference and the animation definitions - into {@code GunItem}'s fields.
      * {@code ExtensionRegistry.discoverExtensions} re-reads the files, but nothing ever
-     * re-registers the items, and a Forge {@code DeferredRegister} is frozen once the
+     * re-registers the items, and a NeoForge {@code DeferredRegister} is frozen once the
      * mod-loading phase is over, so native weapon JSON values cannot be hot-reloaded.
      * This addon therefore only refreshes its own weapon data and the Point Blank UI
      * registries, and reports the limitation instead of pretending otherwise.
      */
     public static final boolean NATIVE_WEAPON_JSON_HOT_RELOAD = false;
 
+    /**
+     * The pack finder sources Point Blank registers on its bootstrap event bus. Its
+     * extension {@code ExtensionRegistry} only lives inside that source, which is how the
+     * registry is reached on NeoForge 1.21.1 (Point Blank no longer keeps it on the mod
+     * instance).
+     */
+    private static final Set<RepositorySource> EXTENSION_PACK_SOURCES =
+            Collections.newSetFromMap(new ConcurrentHashMap<>());
+
     private PointBlankContentReload() {
+    }
+
+    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
+    public static final class ModBus {
+
+        @SubscribeEvent
+        public static void onCommonSetup(FMLCommonSetupEvent event) {
+            event.enqueueWork(PointBlankContentReload::install);
+        }
+    }
+
+    /**
+     * Subscribes to Point Blank's own bootstrap event bus so that the repository source of
+     * its extension pack finder can be captured. Runs after every mod has been constructed,
+     * so Point Blank's platform is guaranteed to exist.
+     */
+    private static void install() {
+        try {
+            Platform.getInstance().getBootstrapEventBus().addListener(
+                    AddPackFindersEvent.class,
+                    (EventListener) event -> {
+                        if (event instanceof AddPackFindersEvent packFinders) {
+                            EXTENSION_PACK_SOURCES.addAll(packFinders.getSources());
+                        }
+                    });
+        } catch (RuntimeException exception) {
+            PointBlankExtraFeatures.LOGGER.warn(
+                    "Could not subscribe to Point Blank's pack finder event, so /pbextra reload "
+                            + "will not be able to re-scan <gameDir>/pointblank ({})",
+                    describe(exception));
+        }
     }
 
 
     public static String rediscoverExtensionPacks() {
         try {
-            Object mod = ModList.get().getModObjectById("pointblank").orElse(null);
-            if (mod == null) {
-                return "the pointblank mod instance is not available";
-            }
-            Field registryField = mod.getClass().getDeclaredField("extensionRegistry");
-            registryField.setAccessible(true);
-            Object registry = registryField.get(mod);
+            Object registry = findExtensionRegistry();
             if (registry == null) {
-                return "the pointblank extension registry is not initialised";
+                return "the pointblank extension registry is not available";
             }
             // discoverExtensions(PackType) is public API and rebuilds the
             // "pointblank_resources" pack from <gameDir>/pointblank/; both pack
@@ -86,6 +129,53 @@ public final class PointBlankContentReload {
             return warnRediscovery(cause);
         } catch (ReflectiveOperationException | RuntimeException exception) {
             return warnRediscovery(exception);
+        }
+    }
+
+    /**
+     * Locates Point Blank's live extension registry through the repository source its pack
+     * finder handed out. That source is an anonymous class created inside the
+     * {@code ExtensionRegistry} instance, so its synthetic {@code this$} field is the
+     * registry itself. Nothing else is assumed about Point Blank's internals.
+     */
+    private static Object findExtensionRegistry() {
+        for (RepositorySource source : EXTENSION_PACK_SOURCES) {
+            Object registry = enclosingExtensionRegistry(source);
+            if (registry != null) {
+                return registry;
+            }
+        }
+        return null;
+    }
+
+    private static Object enclosingExtensionRegistry(RepositorySource source) {
+        Class<?> type = source.getClass();
+        while (type != null && type != Object.class) {
+            for (Field field : type.getDeclaredFields()) {
+                if (!field.getName().startsWith("this$")) {
+                    continue;
+                }
+                try {
+                    field.setAccessible(true);
+                    Object enclosing = field.get(source);
+                    if (enclosing != null && declaresDiscoverExtensions(enclosing.getClass())) {
+                        return enclosing;
+                    }
+                } catch (ReflectiveOperationException | RuntimeException ignored) {
+                    // Not the enclosing instance this addon is looking for.
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
+    private static boolean declaresDiscoverExtensions(Class<?> type) {
+        try {
+            type.getMethod("discoverExtensions", PackType.class);
+            return true;
+        } catch (NoSuchMethodException exception) {
+            return false;
         }
     }
 

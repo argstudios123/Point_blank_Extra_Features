@@ -3,11 +3,11 @@ package com.arg.pbextra.client;
 import com.arg.pbextra.data.MeleeConfig;
 import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.arg.pbextra.melee.MeleeRequestPacket;
-import com.arg.pbextra.network.ModNetwork;
 import com.vicmatskiv.pointblank.item.GunItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.Map;
 import java.util.UUID;
@@ -53,7 +53,7 @@ public final class MeleeInputHandler {
         }
         LOCAL_LAST_MELEE_TICK.put(player.getUUID(), now);
 
-        ModNetwork.CHANNEL.sendToServer(new MeleeRequestPacket(context.offhand()));
+        PacketDistributor.sendToServer(new MeleeRequestPacket(context.offhand()));
     }
 
     private static GunItem.OperableGunContext resolveGunContext(LocalPlayer player) {

@@ -1,19 +1,19 @@
 package com.arg.pbextra.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class PointBlankExtraConfig {
 
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.BooleanValue ENABLE_MOD;
+    public static final ModConfigSpec.BooleanValue ENABLE_MOD;
 
-    public static final ForgeConfigSpec.BooleanValue ENABLE_WATER_LAVA_IMPACT_PARTICLES;
+    public static final ModConfigSpec.BooleanValue ENABLE_WATER_LAVA_IMPACT_PARTICLES;
 
-    public static final ForgeConfigSpec.BooleanValue ENABLE_RESERVE_AMMO_COUNTER;
+    public static final ModConfigSpec.BooleanValue ENABLE_RESERVE_AMMO_COUNTER;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("general");
 

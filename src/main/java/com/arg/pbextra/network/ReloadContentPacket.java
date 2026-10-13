@@ -2,18 +2,29 @@ package com.arg.pbextra.network;
 
 import com.arg.pbextra.client.PbClientReload;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
 
-
-public final class ReloadContentPacket {
+public final class ReloadContentPacket implements CustomPacketPayload {
 
     public static final ReloadContentPacket INSTANCE = new ReloadContentPacket();
 
+    public static final CustomPacketPayload.Type<ReloadContentPacket> TYPE =
+            new CustomPacketPayload.Type<>(
+                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "reload_content"));
+
+    public static final StreamCodec<FriendlyByteBuf, ReloadContentPacket> STREAM_CODEC =
+            StreamCodec.ofMember(ReloadContentPacket::encode, ReloadContentPacket::decode);
+
     public ReloadContentPacket() {
+    }
+
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
     }
 
     public static void encode(ReloadContentPacket message, FriendlyByteBuf buffer) {
@@ -24,10 +35,7 @@ public final class ReloadContentPacket {
         return INSTANCE;
     }
 
-    public static void handle(ReloadContentPacket message, Supplier<NetworkEvent.Context> contextSupplier) {
-        NetworkEvent.Context context = contextSupplier.get();
-        context.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> PbClientReload.begin()));
-        context.setPacketHandled(true);
+    public static void handle(ReloadContentPacket message, IPayloadContext context) {
+        context.enqueueWork(PbClientReload::begin);
     }
 }

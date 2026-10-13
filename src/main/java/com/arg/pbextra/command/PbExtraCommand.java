@@ -1,7 +1,6 @@
 package com.arg.pbextra.command;
 
 import com.arg.pbextra.PointBlankExtraFeatures;
-import com.arg.pbextra.network.ModNetwork;
 import com.arg.pbextra.network.ReloadContentPacket;
 import com.arg.pbextra.reload.PointBlankContentReload;
 import com.mojang.brigadier.CommandDispatcher;
@@ -12,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.repository.PackRepository;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +79,7 @@ public final class PbExtraCommand {
 
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         for (ServerPlayer player : players) {
-            ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), ReloadContentPacket.INSTANCE);
+            PacketDistributor.sendToPlayer(player, ReloadContentPacket.INSTANCE);
         }
         if (players.isEmpty()) {
             // A dedicated server can be reloaded from the console; there is simply

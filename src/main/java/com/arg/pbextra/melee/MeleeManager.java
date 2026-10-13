@@ -3,7 +3,6 @@ package com.arg.pbextra.melee;
 import com.arg.pbextra.data.MeleeAnimation;
 import com.arg.pbextra.data.MeleeConfig;
 import com.arg.pbextra.data.WeaponExtraDataManager;
-import com.arg.pbextra.network.ModNetwork;
 import com.mojang.logging.LogUtils;
 import com.vicmatskiv.pointblank.item.GunItem;
 import net.minecraft.resources.ResourceLocation;
@@ -16,8 +15,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -70,8 +69,8 @@ public final class MeleeManager {
         // Send the animation first: it must start immediately, it is only the hit
         // that waits for preMelee. Both times are passed on in milliseconds of
         // animation time, exactly as configured - never as Minecraft ticks.
-        ModNetwork.CHANNEL.send(
-                PacketDistributor.PLAYER.with(() -> player),
+        PacketDistributor.sendToPlayer(
+                player,
                 new MeleeResponsePacket(offhand,
                         animation == null ? "" : animation.getName(),
                         animation == null ? 0 : animation.getDurationMillis(),
@@ -182,13 +181,13 @@ public final class MeleeManager {
         if (cooldowns == null) {
             return true;
         }
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         Long last = id == null ? null : cooldowns.get(id);
         return last == null || (now - last) >= config.getCooldownTicks();
     }
 
     private static void recordCooldown(ServerPlayer player, ItemStack stack, long now) {
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id == null) {
             return;
         }

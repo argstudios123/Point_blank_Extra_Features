@@ -6,14 +6,14 @@ import com.arg.pbextra.config.PointBlankExtraConfig;
 import com.arg.pbextra.data.WeaponExtraDataManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
-import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.config.ModConfigEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.event.config.ModConfigEvent;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 
 public final class ClientEvents {
@@ -21,8 +21,8 @@ public final class ClientEvents {
     private ClientEvents() {
     }
 
-    @Mod.EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
-            value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
+    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
+            value = Dist.CLIENT)
     public static final class ModBus {
 
         @SubscribeEvent
@@ -49,15 +49,12 @@ public final class ClientEvents {
         }
     }
 
-    @Mod.EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
-            value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-    public static final class ForgeBus {
+    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
+            value = Dist.CLIENT)
+    public static final class GameBus {
 
         @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.END) {
-                return;
-            }
+        public static void onClientTick(ClientTickEvent.Post event) {
             Minecraft minecraft = Minecraft.getInstance();
             if (minecraft.player == null || minecraft.level == null) {
                 return;

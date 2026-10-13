@@ -1,6 +1,5 @@
 package com.arg.pbextra.command;
 
-import com.arg.pbextra.network.ModNetwork;
 import com.arg.pbextra.network.OpenUiEditorPacket;
 import com.arg.pbextra.uieditor.UiDefinitionKind;
 import com.mojang.brigadier.CommandDispatcher;
@@ -11,7 +10,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.List;
 import java.util.Locale;
@@ -55,8 +54,7 @@ public final class UiEditorCommand {
             return 0;
         }
         UiDefinitionKind kind = UiDefinitionKind.byId(kindId);
-        ModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player),
-                new OpenUiEditorPacket(kind, id));
+        PacketDistributor.sendToPlayer(player, new OpenUiEditorPacket(kind, id));
         source.sendSuccess(() -> Component.literal("Opening the " + kind.displayName() + " editor"
                 + (id == null || id.isBlank() ? "." : " for '" + id.trim() + "'.")), false);
         return 1;

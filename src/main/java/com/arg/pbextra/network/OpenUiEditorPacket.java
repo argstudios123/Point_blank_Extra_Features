@@ -3,11 +3,10 @@ package com.arg.pbextra.network;
 import com.arg.pbextra.client.gui.UiEditorScreen;
 import com.arg.pbextra.uieditor.UiDefinitionKind;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server-to-client request that opens the in-game UI editor.
@@ -18,7 +17,14 @@ import java.util.function.Supplier;
  * the configuration itself is read and written on the client, because the HUD it
  * edits is rendered there.</p>
  */
-public final class OpenUiEditorPacket {
+public final class OpenUiEditorPacket implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<OpenUiEditorPacket> TYPE =
+            new CustomPacketPayload.Type<>(
+                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "open_ui_editor"));
+
+    public static final StreamCodec<FriendlyByteBuf, OpenUiEditorPacket> STREAM_CODEC =
+            StreamCodec.ofMember(OpenUiEditorPacket::encode, OpenUiEditorPacket::decode);
 
     private final String kindId;
     private final String definitionId;
@@ -40,6 +46,11 @@ public final class OpenUiEditorPacket {
         return definitionId;
     }
 
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
     public static void encode(OpenUiEditorPacket msg, FriendlyByteBuf buf) {
         buf.writeUtf(msg.kindId);
         buf.writeUtf(msg.definitionId);
@@ -49,10 +60,7 @@ public final class OpenUiEditorPacket {
         return new OpenUiEditorPacket(buf.readUtf(), buf.readUtf());
     }
 
-    public static void handle(OpenUiEditorPacket msg, Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                () -> () -> UiEditorScreen.open(msg.kindId, msg.definitionId)));
-        ctx.setPacketHandled(true);
+    public static void handle(OpenUiEditorPacket msg, IPayloadContext context) {
+        context.enqueueWork(() -> UiEditorScreen.open(msg.kindId, msg.definitionId));
     }
 }

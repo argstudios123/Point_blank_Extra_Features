@@ -29,13 +29,14 @@ public abstract class ClientEventHandlerMixin {
     private ItemStack pointblankextra$lastGunStack = ItemStack.EMPTY;
 
     /**
-     * VPB 2.2.0's onClientTick stores the right-mouse physical state in local
-     * variable slot 17. We replace that value with our toggle state.
+     * VPB 2.2.0 for NeoForge 1.21.1 stores the right-mouse physical state in
+     * local variable slot 20 of {@code onClientTick} (slot 17 on Forge 1.20.1).
+     * We replace that value with our toggle state.
      */
     @ModifyVariable(
             method = "onClientTick",
             at = @At("STORE"),
-            index = 17,
+            index = 20,
             remap = false
     )
     private boolean pointblankextra$modifyRightMouseState(boolean physicalState) {

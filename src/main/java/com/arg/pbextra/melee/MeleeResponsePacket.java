@@ -2,14 +2,20 @@ package com.arg.pbextra.melee;
 
 import com.arg.pbextra.client.MeleeAnimationHandler;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-import java.util.function.Supplier;
 
+public final class MeleeResponsePacket implements CustomPacketPayload {
 
-public final class MeleeResponsePacket {
+    public static final CustomPacketPayload.Type<MeleeResponsePacket> TYPE =
+            new CustomPacketPayload.Type<>(
+                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "melee_response"));
+
+    public static final StreamCodec<FriendlyByteBuf, MeleeResponsePacket> STREAM_CODEC =
+            StreamCodec.ofMember(MeleeResponsePacket::encode, MeleeResponsePacket::decode);
 
     private final boolean offhand;
     private final String animationName;
@@ -42,6 +48,11 @@ public final class MeleeResponsePacket {
         return preMeleeMillis;
     }
 
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
     public static void encode(MeleeResponsePacket msg, FriendlyByteBuf buf) {
         buf.writeBoolean(msg.offhand);
         buf.writeUtf(msg.animationName);
@@ -54,15 +65,9 @@ public final class MeleeResponsePacket {
                 buf.readVarInt());
     }
 
-    public static void handle(MeleeResponsePacket msg, Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT,
-                    () -> () -> MeleeAnimationHandler.playMeleeAnimation(
-                            msg.isOffhand(), msg.getAnimationName(),
-                            msg.getDurationMillis(), msg.getPreMeleeMillis()));
-        });
-        ctx.setPacketHandled(true);
+    public static void handle(MeleeResponsePacket msg, IPayloadContext context) {
+        context.enqueueWork(() -> MeleeAnimationHandler.playMeleeAnimation(
+                msg.isOffhand(), msg.getAnimationName(),
+                msg.getDurationMillis(), msg.getPreMeleeMillis()));
     }
 }
-

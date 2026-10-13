@@ -1,13 +1,21 @@
 package com.arg.pbextra.melee;
 
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.network.NetworkEvent;
-
-import java.util.function.Supplier;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
-public final class MeleeRequestPacket {
+public final class MeleeRequestPacket implements CustomPacketPayload {
+
+    public static final CustomPacketPayload.Type<MeleeRequestPacket> TYPE =
+            new CustomPacketPayload.Type<>(
+                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "melee_request"));
+
+    public static final StreamCodec<FriendlyByteBuf, MeleeRequestPacket> STREAM_CODEC =
+            StreamCodec.ofMember(MeleeRequestPacket::encode, MeleeRequestPacket::decode);
 
     private final boolean offhand;
 
@@ -19,6 +27,11 @@ public final class MeleeRequestPacket {
         return offhand;
     }
 
+    @Override
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
     public static void encode(MeleeRequestPacket msg, FriendlyByteBuf buf) {
         buf.writeBoolean(msg.offhand);
     }
@@ -27,14 +40,11 @@ public final class MeleeRequestPacket {
         return new MeleeRequestPacket(buf.readBoolean());
     }
 
-    public static void handle(MeleeRequestPacket msg, Supplier<NetworkEvent.Context> ctxSupplier) {
-        NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            ServerPlayer player = ctx.getSender();
-            if (player != null) {
+    public static void handle(MeleeRequestPacket msg, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player) {
                 MeleeManager.handleRequest(player, msg.offhand);
             }
         });
-        ctx.setPacketHandled(true);
     }
 }

@@ -58,8 +58,20 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        // Data generation. The NeoForge 26.1.2 dev config no longer provides the old
+        // combined "data" run type - its run types are client, clientData, serverData,
+        // gameTestServer, server and junit - and moddevgradle's legacy data() DSL method
+        // still sets exactly that removed "data" type, which makes :prepareDataRun fail
+        // with "Trying to prepare unknown run: data".
+        //
+        // The client-side data generator (net.minecraft.client.data.Main, run type
+        // clientData) is the successor of the old client "data" run: it takes the same
+        // --mod/--all/--output/--existing arguments and still generates the client and
+        // server providers registered through GatherDataEvent. The run keeps its
+        // historical name so the runData task and the IDE "Data" configuration keep
+        // working.
         data {
-            data()
+            clientData()
             programArguments.addAll '--mod', project.mod_id, '--all',
                     '--output', file('src/generated/resources/').getAbsolutePath(),
                     '--existing', file('src/main/resources/').getAbsolutePath()
@@ -77,10 +89,6 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    // Vic's Point Blank (NeoForge 26.1.2, CurseForge file 8938498) and GeckoLib
-    // (NeoForge 26.1.2, CurseForge file 8327201). NeoForge mods are published in
-    // the official (Mojang) namespace, so they are used directly - no
-    // deobfuscation step is needed.
     implementation "curse.maven:vics-point-blank-961053:8938498"
     implementation "curse.maven:geckolib-388172:8327201"
 }

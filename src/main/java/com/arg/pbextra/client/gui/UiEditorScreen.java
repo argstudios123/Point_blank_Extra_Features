@@ -802,10 +802,14 @@ public final class UiEditorScreen extends Screen {
     }
         // Here comes the rendering
 
+    // Minecraft 26.1.2's Screen#extractRenderStateWithTooltipAndSubtitles already
+    // extracts this screen's background (panorama fade, background blur and menu
+    // background texture) immediately before it calls this method. GuiRenderState
+    // only accepts a single blur request per frame ("Can only blur once per frame"),
+    // so extracting the background here a second time crashed the editor. The Ammo
+    // and Heat editors share this screen, so both are fixed by this one change.
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        extractBackground(graphics, mouseX, mouseY, partialTick);
-
         UiPreviewRenderer.render(graphics, font, layout(), viewport, canvasLeft, canvasTop,
                 canvasRight, canvasBottom, true, selectedKey);
 

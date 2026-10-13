@@ -11,7 +11,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import org.slf4j.Logger;
 import com.geckolib.animatable.GeoAnimatable;
 import com.geckolib.animation.AnimationController;
@@ -123,7 +123,7 @@ public final class MeleeAnimationHandler {
 
         if (!impactAnnounced && positionMillis >= preMeleeMillis) {
             impactAnnounced = true;
-            ClientPacketDistributor.sendToServer(new MeleeImpactPacket(activeAnimationName));
+            ClientPlayNetworking.send(new MeleeImpactPacket(activeAnimationName));
             LOGGER.info("Melee '{}' reached its impact at animation time {} ms (preMelee {} ms)",
                     activeAnimationName, format(positionMillis), preMeleeMillis);
         }

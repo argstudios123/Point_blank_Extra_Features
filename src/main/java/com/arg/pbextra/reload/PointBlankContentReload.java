@@ -15,9 +15,6 @@ import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -78,21 +75,12 @@ public final class PointBlankContentReload {
     private PointBlankContentReload() {
     }
 
-    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
-    public static final class ModBus {
-
-        @SubscribeEvent
-        public static void onCommonSetup(FMLCommonSetupEvent event) {
-            event.enqueueWork(PointBlankContentReload::install);
-        }
-    }
-
     /**
      * Subscribes to Point Blank's own bootstrap event bus so that the repository source of
      * its extension pack finder can be captured. Runs after every mod has been constructed,
      * so Point Blank's platform is guaranteed to exist.
      */
-    private static void install() {
+    public static void install() {
         try {
             Platform.getInstance().getBootstrapEventBus().addListener(
                     AddPackFindersEvent.class,

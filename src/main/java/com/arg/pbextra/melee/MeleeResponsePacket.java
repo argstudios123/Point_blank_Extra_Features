@@ -5,7 +5,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
 public final class MeleeResponsePacket implements CustomPacketPayload {
@@ -65,9 +64,10 @@ public final class MeleeResponsePacket implements CustomPacketPayload {
                 buf.readVarInt());
     }
 
-    public static void handle(MeleeResponsePacket msg, IPayloadContext context) {
-        context.enqueueWork(() -> MeleeAnimationHandler.playMeleeAnimation(
+    /** Handled on the logical client, on its own thread (see {@code ModNetwork}). */
+    public static void handle(MeleeResponsePacket msg) {
+        MeleeAnimationHandler.playMeleeAnimation(
                 msg.isOffhand(), msg.getAnimationName(),
-                msg.getDurationMillis(), msg.getPreMeleeMillis()));
+                msg.getDurationMillis(), msg.getPreMeleeMillis());
     }
 }

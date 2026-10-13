@@ -3,7 +3,7 @@ package com.arg.pbextra.uieditor;
 import com.arg.pbextra.client.UiConfigRepository;
 import com.arg.pbextra.integration.PointBlankJsonIntegration;
 import com.google.gson.JsonObject;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.loader.api.FabricLoader;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -114,7 +114,7 @@ public final class UiDefinitionIndex {
     }
 
     private static Path extensionsRoot() {
-        return FMLPaths.GAMEDIR.get().resolve("pointblank");
+        return FabricLoader.getInstance().getGameDir().resolve("pointblank");
     }
 
     private static String stem(String relativePath) {

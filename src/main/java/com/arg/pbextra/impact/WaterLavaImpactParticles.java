@@ -18,9 +18,6 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 
 
 public final class WaterLavaImpactParticles {
@@ -43,23 +40,13 @@ public final class WaterLavaImpactParticles {
     private WaterLavaImpactParticles() {
     }
 
-    /** Runs after every mod has been constructed, so Point Blank's event bus exists. */
-    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
-    public static final class ModBus {
-
-        @SubscribeEvent
-        public static void onCommonSetup(FMLCommonSetupEvent event) {
-            event.enqueueWork(WaterLavaImpactParticles::install);
-        }
-    }
-
     /**
      * Point Blank 2.2.0 for NeoForge 1.21.1 dispatches its {@code BlockHitEvent} on its
      * own event bus ({@code Platform#getEventBus}) instead of the NeoForge bus, so the
      * listener object is registered there. The event is only observed - it is never
      * cancelled - so Point Blank's own block-hit behaviour stays untouched.
      */
-    private static void install() {
+    public static void install() {
         try {
             Platform.getInstance().getEventBus().register(new BlockHitListener());
         } catch (RuntimeException exception) {

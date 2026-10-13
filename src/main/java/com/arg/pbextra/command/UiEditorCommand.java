@@ -10,7 +10,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import java.util.List;
 import java.util.Locale;
@@ -54,7 +54,7 @@ public final class UiEditorCommand {
             return 0;
         }
         UiDefinitionKind kind = UiDefinitionKind.byId(kindId);
-        PacketDistributor.sendToPlayer(player, new OpenUiEditorPacket(kind, id));
+        ServerPlayNetworking.send(player, new OpenUiEditorPacket(kind, id));
         source.sendSuccess(() -> Component.literal("Opening the " + kind.displayName() + " editor"
                 + (id == null || id.isBlank() ? "." : " for '" + id.trim() + "'.")), false);
         return 1;

@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.packs.repository.PackRepository;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -79,7 +79,7 @@ public final class PbExtraCommand {
 
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         for (ServerPlayer player : players) {
-            PacketDistributor.sendToPlayer(player, ReloadContentPacket.INSTANCE);
+            ServerPlayNetworking.send(player, ReloadContentPacket.INSTANCE);
         }
         if (players.isEmpty()) {
             // A dedicated server can be reloaded from the console; there is simply

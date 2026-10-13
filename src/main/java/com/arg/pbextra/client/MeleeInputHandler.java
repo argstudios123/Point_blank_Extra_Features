@@ -7,7 +7,7 @@ import com.vicmatskiv.pointblank.item.GunItem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 import java.util.Map;
 import java.util.UUID;
@@ -53,7 +53,7 @@ public final class MeleeInputHandler {
         }
         LOCAL_LAST_MELEE_TICK.put(player.getUUID(), now);
 
-        ClientPacketDistributor.sendToServer(new MeleeRequestPacket(context.offhand()));
+        ClientPlayNetworking.send(new MeleeRequestPacket(context.offhand()));
     }
 
     private static GunItem.OperableGunContext resolveGunContext(LocalPlayer player) {

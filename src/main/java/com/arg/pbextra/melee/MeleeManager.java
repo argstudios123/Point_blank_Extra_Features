@@ -16,7 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
@@ -70,7 +70,7 @@ public final class MeleeManager {
         // Send the animation first: it must start immediately, it is only the hit
         // that waits for preMelee. Both times are passed on in milliseconds of
         // animation time, exactly as configured - never as Minecraft ticks.
-        PacketDistributor.sendToPlayer(
+        ServerPlayNetworking.send(
                 player,
                 new MeleeResponsePacket(offhand,
                         animation == null ? "" : animation.getName(),

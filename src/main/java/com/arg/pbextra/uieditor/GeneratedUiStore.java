@@ -9,7 +9,7 @@ import com.vicmatskiv.pointblank.registry.AmmoUiDefinition;
 import com.vicmatskiv.pointblank.registry.AmmoUiRegistry;
 import com.vicmatskiv.pointblank.registry.HeatUiDefinition;
 import com.vicmatskiv.pointblank.registry.HeatUiRegistry;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.loader.api.FabricLoader;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -36,7 +36,7 @@ public final class GeneratedUiStore {
     }
 
     public static Path rootDirectory() {
-        return FMLPaths.GAMEDIR.get().resolve(DIRECTORY_NAME);
+        return FabricLoader.getInstance().getGameDir().resolve(DIRECTORY_NAME);
     }
 
 

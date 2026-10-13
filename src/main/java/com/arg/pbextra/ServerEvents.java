@@ -2,43 +2,43 @@ package com.arg.pbextra;
 
 import com.arg.pbextra.command.PbExtraCommand;
 import com.arg.pbextra.command.UiEditorCommand;
-import com.arg.pbextra.data.WeaponExtraDataManager;
+import com.arg.pbextra.data.WeaponDataReloadListener;
 import com.arg.pbextra.melee.MeleeManager;
-import net.minecraft.resources.Identifier;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.minecraft.server.packs.PackType;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
+/**
+ * Server side and shared registration.
+ *
+ * <p>The NeoForge build used an {@code @EventBusSubscriber} class with
+ * {@code AddReloadListenerEvent}, {@code RegisterCommandsEvent} and
+ * {@code LivingDeathEvent} subscribers. The Fabric equivalents are registered here
+ * from the common mod initialiser.</p>
+ */
 public final class ServerEvents {
 
     private ServerEvents() {
     }
 
-    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
-    public static final class GameBus {
+    public static void register() {
+        // Point Blank's own weapon JSON lives in the server data pack, so the weapon
+        // index is first built from the server's resource manager.
+        ResourceManagerHelper.get(PackType.SERVER_DATA)
+                .registerReloadListener(WeaponDataReloadListener.server());
 
-        @SubscribeEvent
-        public static void onAddReloadListeners(AddServerReloadListenersEvent event) {
-            event.addListener(
-                    Identifier.fromNamespaceAndPath(PointBlankExtraFeatures.MOD_ID, "weapon_extra_data"),
-                    (ResourceManagerReloadListener) WeaponExtraDataManager::reload);
-        }
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            UiEditorCommand.register(dispatcher);
+            PbExtraCommand.register(dispatcher);
+        });
 
-        @SubscribeEvent
-        public static void onRegisterCommands(RegisterCommandsEvent event) {
-            UiEditorCommand.register(event.getDispatcher());
-            PbExtraCommand.register(event.getDispatcher());
-        }
-
-        @SubscribeEvent
-        public static void onLivingDeath(LivingDeathEvent event) {
-            if (event.getEntity() instanceof Player player) {
+        // An interrupted swing must not be reported after the player died.
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damageSource) -> {
+            if (entity instanceof Player player) {
                 MeleeManager.clearCooldown(player.getUUID());
             }
-        }
+        });
     }
 }

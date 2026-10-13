@@ -7,9 +7,8 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.fml.loading.FMLPaths;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
@@ -45,7 +44,7 @@ public final class WeaponExtraDataManager {
         Map<String, String> failuresById = new LinkedHashMap<>();
 
         boolean extensionsScanned = PointBlankJsonIntegration.scanExtensions(
-                FMLPaths.GAMEDIR.get().resolve("pointblank"), next, failuresById);
+                FabricLoader.getInstance().getGameDir().resolve("pointblank"), next, failuresById);
         boolean builtInScanned = PointBlankJsonIntegration.scanBuiltIn(
                 resourceManager, next, failuresById);
 
@@ -107,7 +106,7 @@ public final class WeaponExtraDataManager {
      * dedicated server.
      */
     private static void invalidateClientCaches() {
-        if (FMLEnvironment.getDist() == Dist.CLIENT) {
+        if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
             ReserveAmmoCounter.invalidate();
         }
     }

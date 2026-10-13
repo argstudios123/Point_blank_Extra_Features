@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "license": "${mod_license}",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.arg.pbextra.PointBlankExtraFeatures"
+    ],
+    "client": [
+      "com.arg.pbextra.PointBlankExtraClient"
+    ]
+  },
+  "mixins": [
+    "pointblankextra.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "${loader_version_range}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version_range}",
+    "java": ">=25",
+    "pointblank": ">=${pointblank_version}",
+    "geckolib": ">=${geckolib_version}"
+  }
+}

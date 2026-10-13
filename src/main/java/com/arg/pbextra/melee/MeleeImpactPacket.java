@@ -5,7 +5,6 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
 public final class MeleeImpactPacket implements CustomPacketPayload {
@@ -40,11 +39,10 @@ public final class MeleeImpactPacket implements CustomPacketPayload {
         return new MeleeImpactPacket(buf.readUtf());
     }
 
-    public static void handle(MeleeImpactPacket msg, IPayloadContext context) {
-        context.enqueueWork(() -> {
-            if (context.player() instanceof ServerPlayer player) {
-                MeleeManager.handleImpact(player, msg.animationName);
-            }
-        });
+    /** Handled on the logical server, on its own thread (see {@code ModNetwork}). */
+    public static void handle(MeleeImpactPacket msg, ServerPlayer player) {
+        if (player != null) {
+            MeleeManager.handleImpact(player, msg.animationName);
+        }
     }
 }

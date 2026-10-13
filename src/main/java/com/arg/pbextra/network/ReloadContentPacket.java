@@ -5,7 +5,6 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
 public final class ReloadContentPacket implements CustomPacketPayload {
@@ -35,7 +34,8 @@ public final class ReloadContentPacket implements CustomPacketPayload {
         return INSTANCE;
     }
 
-    public static void handle(ReloadContentPacket message, IPayloadContext context) {
-        context.enqueueWork(PbClientReload::begin);
+    /** Handled on the logical client, on its own thread (see {@code ModNetwork}). */
+    public static void handle(ReloadContentPacket message) {
+        PbClientReload.begin();
     }
 }

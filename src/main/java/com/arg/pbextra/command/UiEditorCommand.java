@@ -29,7 +29,7 @@ public final class UiEditorCommand {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal(ROOT)
-                .requires(source -> source.hasPermission(REQUIRED_PERMISSION_LEVEL))
+                .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                 .then(Commands.literal("open")
                         .then(Commands.argument("kind", StringArgumentType.word())
                                 .suggests((context, builder) ->

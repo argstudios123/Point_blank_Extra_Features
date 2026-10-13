@@ -2,7 +2,7 @@ package com.arg.pbextra.client.gui;
 
 import com.arg.pbextra.uieditor.UiColors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 import java.util.function.Supplier;
 
@@ -17,7 +17,7 @@ public final class ColorSwatchWidget extends FlatButton {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         int color = getter.get() == null ? 0xFFFFFFFF : getter.get();
         int border = active && isHoveredOrFocused() ? 0xFFFFFFFF : 0xFF505860;
         int left = getX() + 1;

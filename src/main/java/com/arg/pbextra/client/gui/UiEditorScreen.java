@@ -14,7 +14,11 @@ import com.arg.pbextra.uieditor.UiEditorModel;
 import com.arg.pbextra.uieditor.UiTextBlock;
 import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -799,14 +803,14 @@ public final class UiEditorScreen extends Screen {
         // Here comes the rendering
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        extractBackground(graphics, mouseX, mouseY, partialTick);
 
         UiPreviewRenderer.render(graphics, font, layout(), viewport, canvasLeft, canvasTop,
                 canvasRight, canvasBottom, true, selectedKey);
 
-        graphics.drawString(font, titleText(), canvasLeft + 2, 6, TITLE_COLOR, false);
-        graphics.drawString(font, "Drag a text to move it - scroll over the preview to zoom",
+        graphics.text(font, titleText(), canvasLeft + 2, 6, TITLE_COLOR, false);
+        graphics.text(font, "Drag a text to move it - scroll over the preview to zoom",
                 canvasLeft + 2, 17, HINT_COLOR, false);
 
         graphics.fill(panelLeft, 2, width, height, PANEL_BACKGROUND);
@@ -826,7 +830,7 @@ public final class UiEditorScreen extends Screen {
         }
         graphics.disableScissor();
 
-        graphics.drawString(font, statusMessage, panelContentLeft(), height - 30, statusColor, false);
+        graphics.text(font, statusMessage, panelContentLeft(), height - 30, statusColor, false);
 
         colorPicker.render(graphics, font);
         if (newDialogOpen) {
@@ -837,27 +841,30 @@ public final class UiEditorScreen extends Screen {
         }
     }
 
-    private void drawEntry(GuiGraphics graphics, Entry entry, int mouseX, int mouseY, float partialTick) {
+    private void drawEntry(GuiGraphicsExtractor graphics, Entry entry, int mouseX, int mouseY, float partialTick) {
         int y = entryY(entry);
         if (entry.widget == null) {
             if (entry.label != null) {
-                graphics.drawString(font, entry.label, panelContentLeft(), y + 4,
+                graphics.text(font, entry.label, panelContentLeft(), y + 4,
                         entry.header ? SECTION_COLOR : HINT_COLOR, false);
             }
             return;
         }
         if (entry.label != null) {
-            graphics.drawString(font, entry.label, panelContentLeft(),
+            graphics.text(font, entry.label, panelContentLeft(),
                     y + (WIDGET_HEIGHT - 8) / 2 + 1, LABEL_COLOR, false);
         }
-        entry.widget.render(graphics, mouseX, mouseY, partialTick);
+        entry.widget.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
 
 
 
     // Thhis is where the screen accepts input
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (searchOpen) {
             // The search dialog floats above everything and consumes the click
             // either way, so no widget below can be hit by accident.
@@ -903,7 +910,7 @@ public final class UiEditorScreen extends Screen {
         if (widget == null || !widget.active || !widget.visible || !widget.isMouseOver(mouseX, mouseY)) {
             return false;
         }
-        if (!widget.mouseClicked(mouseX, mouseY, button)) {
+        if (!widget.mouseClicked(new MouseButtonEvent(mouseX, mouseY, new MouseButtonInfo(button, 0)), false)) {
             return false;
         }
         focusBox(widget instanceof EditBox box ? box : null);
@@ -961,7 +968,10 @@ public final class UiEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         if (colorPicker.isOpen() && colorPicker.mouseDragged(mouseX, mouseY)) {
             return true;
         }
@@ -969,14 +979,17 @@ public final class UiEditorScreen extends Screen {
             updateDrag(mouseX, mouseY);
             return true;
         }
-        if (focusedBox != null && focusedBox.mouseDragged(mouseX, mouseY, button, dragX, dragY)) {
+        if (focusedBox != null && focusedBox.mouseDragged(event, dragX, dragY)) {
             return true;
         }
         return false;
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
+        double mouseX = event.x();
+        double mouseY = event.y();
+        int button = event.button();
         boolean handled = false;
         if (colorPicker.mouseReleased()) {
             handled = true;
@@ -985,7 +998,7 @@ public final class UiEditorScreen extends Screen {
             dragging = false;
             handled = true;
         }
-        if (focusedBox != null && focusedBox.mouseReleased(mouseX, mouseY, button)) {
+        if (focusedBox != null && focusedBox.mouseReleased(event)) {
             handled = true;
         }
         flushRebuild();
@@ -1016,7 +1029,10 @@ public final class UiEditorScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+    public boolean keyPressed(KeyEvent event) {
+        int keyCode = event.key();
+        int scanCode = event.scancode();
+        int modifiers = event.modifiers();
         if (searchOpen) {
             return handleSearchKey(keyCode);
         }
@@ -1027,18 +1043,19 @@ public final class UiEditorScreen extends Screen {
             colorPicker.close();
             return true;
         }
-        if (focusedBox != null && focusedBox.keyPressed(keyCode, scanCode, modifiers)) {
+        if (focusedBox != null && focusedBox.keyPressed(event)) {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             onClose();
             return true;
         }
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override
-    public boolean charTyped(char codePoint, int modifiers) {
+    public boolean charTyped(CharacterEvent event) {
+        char codePoint = (char) event.codepoint();
         if (searchOpen) {
             if (isSearchCharacter(codePoint) && searchQuery.length() < 64) {
                 searchQuery += codePoint;
@@ -1052,7 +1069,7 @@ public final class UiEditorScreen extends Screen {
             }
             return true;
         }
-        if (focusedBox != null && focusedBox.charTyped(codePoint, modifiers)) {
+        if (focusedBox != null && focusedBox.charTyped(event)) {
             return true;
         }
         return false;
@@ -1142,17 +1159,17 @@ public final class UiEditorScreen extends Screen {
     }
 
 
-    private void renderNewDialog(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderNewDialog(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         int left = newDialogLeft();
         int top = newDialogTop();
         int right = left + NEW_DIALOG_WIDTH;
         int bottom = top + NEW_DIALOG_HEIGHT;
         graphics.fill(0, 0, width, height, DIALOG_SCRIM);
         graphics.fill(left, top, right, bottom, DIALOG_BACKGROUND);
-        graphics.renderOutline(left, top, NEW_DIALOG_WIDTH, NEW_DIALOG_HEIGHT, DIALOG_BORDER);
-        graphics.drawString(font, "Create new configuration", left + 6, top + 8, DIALOG_TITLE, false);
+        graphics.outline(left, top, NEW_DIALOG_WIDTH, NEW_DIALOG_HEIGHT, DIALOG_BORDER);
+        graphics.text(font, "Create new configuration", left + 6, top + 8, DIALOG_TITLE, false);
 
-        graphics.drawString(font, "Type", left + 6, top + 20, LABEL_COLOR, false);
+        graphics.text(font, "Type", left + 6, top + 20, LABEL_COLOR, false);
         drawDialogChoice(graphics, mouseX, mouseY, ammoButtonX(), typeButtonY(), typeButtonWidth(),
                 "Ammo UI", newDialogKind == UiDefinitionKind.AMMO, true);
         drawDialogChoice(graphics, mouseX, mouseY, heatButtonX(), typeButtonY(), typeButtonWidth(),
@@ -1161,30 +1178,30 @@ public final class UiEditorScreen extends Screen {
         String name = newDialogName == null ? "" : newDialogName;
         String trimmed = name.trim();
         boolean ready = !trimmed.isEmpty() && UiConfigRepository.isValidId(trimmed);
-        graphics.drawString(font, "Name", left + 6, top + 52, LABEL_COLOR, false);
+        graphics.text(font, "Name", left + 6, top + 52, LABEL_COLOR, false);
         int fieldY = dialogFieldY();
         graphics.fill(left + 6, fieldY, right - 6, fieldY + NEW_DIALOG_CHOICE_HEIGHT, DIALOG_FIELD);
-        graphics.renderOutline(left + 6, fieldY, NEW_DIALOG_WIDTH - 12, NEW_DIALOG_CHOICE_HEIGHT,
+        graphics.outline(left + 6, fieldY, NEW_DIALOG_WIDTH - 12, NEW_DIALOG_CHOICE_HEIGHT,
                 DIALOG_FIELD_BORDER);
-        graphics.drawString(font, name, left + 9, fieldY + 4, TITLE_COLOR, false);
-        graphics.drawString(font, "_", left + 9 + font.width(name), fieldY + 4, SELECTED_COLOR, false);
+        graphics.text(font, name, left + 9, fieldY + 4, TITLE_COLOR, false);
+        graphics.text(font, "_", left + 9 + font.width(name), fieldY + 4, SELECTED_COLOR, false);
 
         drawDialogChoice(graphics, mouseX, mouseY, createButtonX(), footerButtonY(),
                 dialogButtonWidth(), "Create", false, ready);
         drawDialogChoice(graphics, mouseX, mouseY, cancelButtonX(), footerButtonY(),
                 dialogButtonWidth(), "Cancel", false, true);
-        graphics.drawString(font, "Enter to create  -  Esc to cancel", left + 6, bottom - 12,
+        graphics.text(font, "Enter to create  -  Esc to cancel", left + 6, bottom - 12,
                 HINT_COLOR, false);
     }
 
-    private void drawDialogChoice(GuiGraphics graphics, int mouseX, int mouseY, int x, int y,
+    private void drawDialogChoice(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int x, int y,
                                   int choiceWidth, String label, boolean selected, boolean enabled) {
         boolean hovered = enabled && hit(mouseX, mouseY, x, y, choiceWidth, NEW_DIALOG_CHOICE_HEIGHT);
         int fill = selected ? DIALOG_CHOICE_SELECTED : hovered ? DIALOG_CHOICE_HOVERED : DIALOG_CHOICE;
         graphics.fill(x, y, x + choiceWidth, y + NEW_DIALOG_CHOICE_HEIGHT, DIALOG_BORDER);
         graphics.fill(x + 1, y + 1, x + choiceWidth - 1, y + NEW_DIALOG_CHOICE_HEIGHT - 1, fill);
         int textColor = !enabled ? 0xFF707070 : selected ? SELECTED_COLOR : TITLE_COLOR;
-        graphics.drawString(font, label, x + (choiceWidth - font.width(label)) / 2,
+        graphics.text(font, label, x + (choiceWidth - font.width(label)) / 2,
                 y + (NEW_DIALOG_CHOICE_HEIGHT - 8) / 2 + 1, textColor, false);
     }
 
@@ -1386,34 +1403,34 @@ public final class UiEditorScreen extends Screen {
     }
 
 
-    private void renderSearchDialog(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderSearchDialog(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         int left = searchDialogLeft();
         int top = searchDialogTop();
         int right = left + SEARCH_DIALOG_WIDTH;
         int bottom = top + SEARCH_DIALOG_HEIGHT;
         graphics.fill(0, 0, width, height, DIALOG_SCRIM);
         graphics.fill(left, top, right, bottom, DIALOG_BACKGROUND);
-        graphics.renderOutline(left, top, SEARCH_DIALOG_WIDTH, SEARCH_DIALOG_HEIGHT, DIALOG_BORDER);
+        graphics.outline(left, top, SEARCH_DIALOG_WIDTH, SEARCH_DIALOG_HEIGHT, DIALOG_BORDER);
 
-        graphics.drawString(font, "Search " + kind.displayName() + " definitions",
+        graphics.text(font, "Search " + kind.displayName() + " definitions",
                 left + 6, top + 8, DIALOG_TITLE, false);
         String count = searchResults.size() + "/" + searchEntries.size();
-        graphics.drawString(font, count, right - 6 - font.width(count), top + 8, HINT_COLOR, false);
+        graphics.text(font, count, right - 6 - font.width(count), top + 8, HINT_COLOR, false);
 
-        graphics.drawString(font, "Find", left + 6, searchFieldY() + 4, LABEL_COLOR, false);
+        graphics.text(font, "Find", left + 6, searchFieldY() + 4, LABEL_COLOR, false);
         int fieldLeft = left + 32;
         int fieldRight = right - 6;
         graphics.fill(fieldLeft, searchFieldY(), fieldRight, searchFieldY() + 16, DIALOG_FIELD);
-        graphics.renderOutline(fieldLeft, searchFieldY(), fieldRight - fieldLeft, 16, DIALOG_FIELD_BORDER);
-        graphics.drawString(font, searchQuery, fieldLeft + 3, searchFieldY() + 4, TITLE_COLOR, false);
-        graphics.drawString(font, "_", fieldLeft + 3 + font.width(searchQuery), searchFieldY() + 4,
+        graphics.outline(fieldLeft, searchFieldY(), fieldRight - fieldLeft, 16, DIALOG_FIELD_BORDER);
+        graphics.text(font, searchQuery, fieldLeft + 3, searchFieldY() + 4, TITLE_COLOR, false);
+        graphics.text(font, "_", fieldLeft + 3 + font.width(searchQuery), searchFieldY() + 4,
                 SELECTED_COLOR, false);
 
         if (searchResults.isEmpty()) {
             String message = searchEntries.isEmpty()
                     ? "No " + kind.displayName() + " definitions found in the loaded content packs."
                     : "Nothing matches '" + searchQuery + "'.";
-            graphics.drawString(font, message, left + 6, searchListY() + 6, HINT_COLOR, false);
+            graphics.text(font, message, left + 6, searchListY() + 6, HINT_COLOR, false);
         } else {
             int visible = Math.min(SEARCH_VISIBLE_ROWS, searchResults.size() - searchScroll);
             for (int row = 0; row < visible; row++) {
@@ -1426,7 +1443,7 @@ public final class UiEditorScreen extends Screen {
                     graphics.fill(left + 6, y, right - 6, y + SEARCH_ROW_HEIGHT,
                             selected ? DIALOG_CHOICE_SELECTED : DIALOG_CHOICE);
                 }
-                graphics.drawString(font, entry.id(), left + 9, y + 4,
+                graphics.text(font, entry.id(), left + 9, y + 4,
                         selected ? SELECTED_COLOR : TITLE_COLOR, false);
 
                 // The source pack is right aligned and shortened so it can never
@@ -1437,17 +1454,17 @@ public final class UiEditorScreen extends Screen {
                 while (!source.isEmpty() && sourceRight - font.width(source) < idEnd) {
                     source = source.substring(0, source.length() - 1);
                 }
-                graphics.drawString(font, source, sourceRight - font.width(source), y + 4,
+                graphics.text(font, source, sourceRight - font.width(source), y + 4,
                         HINT_COLOR, false);
             }
             if (searchResults.size() > SEARCH_VISIBLE_ROWS) {
-                graphics.drawString(font, (searchScroll + 1) + "-" + (searchScroll + visible)
+                graphics.text(font, (searchScroll + 1) + "-" + (searchScroll + visible)
                                 + " of " + searchResults.size(),
                         left + 6, searchResultY(SEARCH_VISIBLE_ROWS) + 2, HINT_COLOR, false);
             }
         }
 
-        graphics.drawString(font, "Click a result to open it - Enter opens the selected - Esc cancels",
+        graphics.text(font, "Click a result to open it - Enter opens the selected - Esc cancels",
                 left + 6, bottom - 12, HINT_COLOR, false);
     }
 

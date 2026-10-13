@@ -1,8 +1,9 @@
 package com.arg.pbextra.client.gui;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.Font;
 
@@ -39,21 +40,21 @@ public class FlatButton extends AbstractButton {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(InputWithModifiers input) {
         if (action != null) {
             action.run();
         }
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         boolean hovered = active && isHoveredOrFocused();
         int border = !active ? BORDER_COLOR_DISABLED : hovered ? BORDER_COLOR_HOVERED : BORDER_COLOR;
         int fill = !active ? FILL_COLOR_DISABLED : hovered ? FILL_COLOR_HOVERED : FILL_COLOR;
         graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), border);
         graphics.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, fill);
         if (getMessage() != null) {
-            graphics.drawString(font, getMessage(), getX() + leftPadding,
+            graphics.text(font, getMessage(), getX() + leftPadding,
                     getY() + (getHeight() - 8) / 2 + 1, active ? textColor : 0xFF808080, false);
         }
     }

@@ -17,7 +17,7 @@ config="pointblankextra.mixins.json"
 [[dependencies.pointblankextra]]
 modId="neoforge"
 type="required"
-versionRange="[21.1.150,)"
+versionRange="[26.1.2,)"
 ordering="NONE"
 side="BOTH"
 

@@ -11,8 +11,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
 
@@ -27,6 +28,7 @@ public final class ClientEvents {
 
         @SubscribeEvent
         public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+            event.registerCategory(ClientKeybinds.CATEGORY);
             event.register(ClientKeybinds.MELEE_KEY);
         }
 
@@ -37,8 +39,10 @@ public final class ClientEvents {
         }
 
         @SubscribeEvent
-        public static void registerReloadListeners(RegisterClientReloadListenersEvent event) {
-            event.registerReloadListener((ResourceManagerReloadListener) WeaponExtraDataManager::reload);
+        public static void registerReloadListeners(AddClientReloadListenersEvent event) {
+            event.addListener(
+                    Identifier.fromNamespaceAndPath(PointBlankExtraFeatures.MOD_ID, "weapon_extra_data"),
+                    (ResourceManagerReloadListener) WeaponExtraDataManager::reload);
         }
 
         @SubscribeEvent

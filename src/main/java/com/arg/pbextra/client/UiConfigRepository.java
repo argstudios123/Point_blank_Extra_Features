@@ -11,7 +11,7 @@ import com.vicmatskiv.pointblank.registry.AmmoUiRegistry;
 import com.vicmatskiv.pointblank.registry.HeatUiDefinition;
 import com.vicmatskiv.pointblank.registry.HeatUiRegistry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 
 import java.io.IOException;
@@ -102,7 +102,7 @@ public final class UiConfigRepository {
 
 
     private static JsonObject readContentPackJson(UiDefinitionKind kind, String id) {
-        ResourceLocation location = contentPackLocation(kind, id);
+        Identifier location = contentPackLocation(kind, id);
         if (location == null) {
             return null;
         }
@@ -121,13 +121,13 @@ public final class UiConfigRepository {
         }
     }
 
-    private static ResourceLocation contentPackLocation(UiDefinitionKind kind, String id) {
+    private static Identifier contentPackLocation(UiDefinitionKind kind, String id) {
         if (id == null || id.isBlank()) {
             return null;
         }
         String path = (kind == UiDefinitionKind.HEAT ? "ui/heat/" : "ui/") + id + ".json";
         try {
-            return ResourceLocation.tryParse("pointblank:" + path);
+            return Identifier.tryParse("pointblank:" + path);
         } catch (RuntimeException exception) {
             return null;
         }

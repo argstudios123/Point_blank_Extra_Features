@@ -4,7 +4,7 @@ import com.arg.pbextra.ammo.ReserveAmmoCounter;
 import com.arg.pbextra.constraint.AdsConstraintConfig;
 import com.arg.pbextra.integration.PointBlankJsonIntegration;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -107,7 +107,7 @@ public final class WeaponExtraDataManager {
      * dedicated server.
      */
     private static void invalidateClientCaches() {
-        if (FMLEnvironment.dist == Dist.CLIENT) {
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
             ReserveAmmoCounter.invalidate();
         }
     }
@@ -157,7 +157,7 @@ public final class WeaponExtraDataManager {
         return loaded;
     }
 
-    public static WeaponExtraData getData(ResourceLocation itemId) {
+    public static WeaponExtraData getData(Identifier itemId) {
         if (itemId == null) {
             return WeaponExtraData.EMPTY;
         }
@@ -188,7 +188,7 @@ public final class WeaponExtraDataManager {
     }
 
     /** Whether the given item has "no ADS during inspect" enabled via its weapon JSON. */
-    public static boolean isNoADSDuringInspect(ResourceLocation itemId) {
+    public static boolean isNoADSDuringInspect(Identifier itemId) {
         return getData(itemId).isNoADSDuringInspect();
     }
 
@@ -198,7 +198,7 @@ public final class WeaponExtraDataManager {
     }
 
     /** Whether the given item has "ADS disabled during reload" enabled via its weapon JSON. */
-    public static boolean isDisableAdsDuringReload(ResourceLocation itemId) {
+    public static boolean isDisableAdsDuringReload(Identifier itemId) {
         return getData(itemId).isDisableAdsDuringReload();
     }
 

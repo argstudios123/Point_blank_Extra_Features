@@ -5,12 +5,13 @@ import com.arg.pbextra.data.MeleeConfig;
 import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.mojang.logging.LogUtils;
 import com.vicmatskiv.pointblank.item.GunItem;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.animal.Cat;
-import net.minecraft.world.entity.animal.Ocelot;
+import net.minecraft.world.entity.animal.feline.Cat;
+import net.minecraft.world.entity.animal.feline.Ocelot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
@@ -31,7 +32,7 @@ public final class MeleeManager {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final Random RANDOM = new Random();
 
-    private static final Map<UUID, Map<ResourceLocation, Long>> LAST_MELEE_TICK =
+    private static final Map<UUID, Map<Identifier, Long>> LAST_MELEE_TICK =
             new ConcurrentHashMap<>();
 
     private static final Map<UUID, PendingImpact> PENDING_IMPACTS = new ConcurrentHashMap<>();
@@ -131,7 +132,8 @@ public final class MeleeManager {
         int targetId = -1;
         boolean hit = false;
         if (target != null && !damageExcluded) {
-            hit = target.hurt(player.level().damageSources().playerAttack(player),
+            hit = target.hurtServer((ServerLevel) player.level(),
+                    player.level().damageSources().playerAttack(player),
                     (float) config.getDamage());
             if (hit) {
                 targetId = target.getId();
@@ -177,17 +179,17 @@ public final class MeleeManager {
 
     private static boolean isCooldownExpired(ServerPlayer player, ItemStack stack,
                                              MeleeConfig config, long now) {
-        Map<ResourceLocation, Long> cooldowns = LAST_MELEE_TICK.get(player.getUUID());
+        Map<Identifier, Long> cooldowns = LAST_MELEE_TICK.get(player.getUUID());
         if (cooldowns == null) {
             return true;
         }
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         Long last = id == null ? null : cooldowns.get(id);
         return last == null || (now - last) >= config.getCooldownTicks();
     }
 
     private static void recordCooldown(ServerPlayer player, ItemStack stack, long now) {
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         if (id == null) {
             return;
         }
@@ -214,12 +216,12 @@ public final class MeleeManager {
 
         EntityHitResult result = net.minecraft.world.entity.projectile.ProjectileUtil
                 .getEntityHitResult(
-                        player.level(),
                         player,
                         eye,
                         end,
                         box,
-                        e -> e != null && e instanceof LivingEntity && e != player
+                        e -> e != null && e instanceof LivingEntity && e != player,
+                        reach
                 );
 
         if (result != null && result.getEntity() instanceof LivingEntity living) {

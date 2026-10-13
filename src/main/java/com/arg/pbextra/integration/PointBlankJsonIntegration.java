@@ -4,7 +4,7 @@ import com.arg.pbextra.data.WeaponExtraData;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import org.slf4j.Logger;
@@ -103,7 +103,7 @@ public final class PointBlankJsonIntegration {
             return true;
         }
 
-        Map<ResourceLocation, Resource> resources;
+        Map<Identifier, Resource> resources;
         try {
             resources = resourceManager.listResources(
                     ITEMS_DIR,
@@ -116,8 +116,8 @@ public final class PointBlankJsonIntegration {
             return false;
         }
 
-        for (Map.Entry<ResourceLocation, Resource> entry : resources.entrySet()) {
-            ResourceLocation loc = entry.getKey();
+        for (Map.Entry<Identifier, Resource> entry : resources.entrySet()) {
+            Identifier loc = entry.getKey();
             String fallbackName = stripItemsPrefixAndExtension(loc.getPath());
             try (InputStream is = entry.getValue().open()) {
                 parseWeapon(new InputStreamReader(is, StandardCharsets.UTF_8), fallbackName, out);

@@ -2,7 +2,7 @@ package com.arg.pbextra.client.gui;
 
 import com.arg.pbextra.uieditor.UiColors;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 
 import java.util.function.Consumer;
@@ -134,15 +134,15 @@ public final class UiColorPicker {
     }
 
 
-    public void render(GuiGraphics graphics, Font font) {
+    public void render(GuiGraphicsExtractor graphics, Font font) {
         if (!open) {
             return;
         }
         int right = left + WIDTH;
         int bottom = top + HEIGHT;
         graphics.fill(left, top, right, bottom, BACKGROUND_COLOR);
-        graphics.renderOutline(left, top, WIDTH, HEIGHT, BORDER_COLOR);
-        graphics.drawString(font, title, left + 6, top + 6, 0xFFFFD24D, false);
+        graphics.outline(left, top, WIDTH, HEIGHT, BORDER_COLOR);
+        graphics.text(font, title, left + 6, top + 6, 0xFFFFD24D, false);
 
         for (int index = 0; index < CHANNELS; index++) {
             int barTop = top + BARS_TOP + index * (BAR_HEIGHT + BAR_SPACING);
@@ -160,24 +160,24 @@ public final class UiColorPicker {
             }
         }
         graphics.fill(previewLeft + 1, previewTop + 1, previewRight - 1, previewBottom - 1, color());
-        graphics.renderOutline(previewLeft, previewTop, 40, 12, 0xFF303030);
-        graphics.drawString(font, UiColors.format(color()), previewLeft + 46, previewTop + 2, 0xFFFFFFFF, false);
-        graphics.drawString(font, "Esc or click outside to close", left + 6, previewTop + 16, 0xFF909090, false);
+        graphics.outline(previewLeft, previewTop, 40, 12, 0xFF303030);
+        graphics.text(font, UiColors.format(color()), previewLeft + 46, previewTop + 2, 0xFFFFFFFF, false);
+        graphics.text(font, "Esc or click outside to close", left + 6, previewTop + 16, 0xFF909090, false);
     }
 
-    private void renderBar(GuiGraphics graphics, Font font, int index, int barTop) {
+    private void renderBar(GuiGraphicsExtractor graphics, Font font, int index, int barTop) {
         int barLeft = left + BAR_LEFT;
         int barRight = left + BAR_RIGHT;
-        graphics.drawString(font, CHANNEL_NAMES[index], left + 10, barTop + 1, 0xFFE0E0E0, false);
+        graphics.text(font, CHANNEL_NAMES[index], left + 10, barTop + 1, 0xFFE0E0E0, false);
 
         int slices = barRight - barLeft;
         for (int slice = 0; slice < slices; slice++) {
             int value = (int) Math.round(slice / (double) (slices - 1) * 255.0D);
             graphics.fill(barLeft + slice, barTop, barLeft + slice + 1, barTop + BAR_HEIGHT, withChannel(index, value));
         }
-        graphics.renderOutline(barLeft - 1, barTop - 1, barRight - barLeft + 2, BAR_HEIGHT + 2, 0xFF303030);
+        graphics.outline(barLeft - 1, barTop - 1, barRight - barLeft + 2, BAR_HEIGHT + 2, 0xFF303030);
         int knob = barLeft + Math.round(channel(index) / 255.0f * (barRight - barLeft - 1));
         graphics.fill(knob, barTop - 1, knob + 1, barTop + BAR_HEIGHT + 1, 0xFFFFFFFF);
-        graphics.drawString(font, Integer.toString(channel(index)), barRight + 4, barTop + 1, 0xFFE0E0E0, false);
+        graphics.text(font, Integer.toString(channel(index)), barRight + 4, barTop + 1, 0xFFE0E0E0, false);
     }
 }

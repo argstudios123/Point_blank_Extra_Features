@@ -1,10 +1,11 @@
 Point Blank Extra Features
 ==========================
 
-An addon for Vic's Point Blank (Forge 1.20.1) that adds extra weapon features
+An addon for Vic's Point Blank (NeoForge 1.21.1) that adds extra weapon features
 without modifying or replacing Point Blank itself.
 
-Requirements: Minecraft 1.20.1, Forge 47.4.23, Point Blank 2.2.0, GeckoLib 4.8.4.
+Requirements: Minecraft 1.21.1, NeoForge 21.1.150+, Vic's Point Blank 2.2.0
+(CurseForge file 8855569), GeckoLib 4.9.3 (CurseForge file 8893490).
 This JAR does NOT bundle Point Blank or GeckoLib; install all three mods together.
 
 Features
@@ -53,7 +54,7 @@ Melee key: "Melee Attack" under "Point Blank Extra Features" in Controls.
 Default V, fully rebindable; gameplay logic never hard-codes V. One global key;
 the held weapon's JSON decides whether it responds. Non-melee weapons ignore it.
 
-Networking (anti-cheat):
+Networking (anti-cheat, NeoForge payloads):
   CLIENT press key -> check held weapon + local cooldown -> MeleeRequestPacket
   SERVER re-check gun/melee/cooldown -> server-side ray cast within reach ->
          apply damage from weapon config -> random animation -> MeleeResponsePacket
@@ -102,7 +103,7 @@ GeckoLib .animation.json file. Point Blank conventionally prefixes with
 
 Building
 --------
-Java 17 required. Run:  ./gradlew build
+Java 21 required. Run:  ./gradlew build
 Output: build/libs/pointblankextra-<version>.jar
 
 Integration (without replacing Point Blank)
@@ -113,9 +114,11 @@ Integration (without replacing Point Blank)
 - Melee anim: Mixin into GunItem.registerControllers adds one dedicated,
               non-interfering GeckoLib controller ("pbextra_melee") that stays
               stopped unless a melee animation is triggered.
-- Networking: separate Forge SimpleChannel; Point Blank's channel is untouched.
-- Particles:  Forge listener on Point Blank's BlockHitEvent, never cancelled;
-              Point Blank's block-hit logic still runs unchanged.
+- Networking: separate NeoForge payload channel; Point Blank's channel is
+              untouched.
+- Particles:  Listener on Point Blank's own event bus (Platform#getEventBus,
+              @SubscribeEvent2) for BlockHitEvent, never cancelled; Point Blank's
+              block-hit logic still runs unchanged.
 
 Config: config/pointblankextra-client.toml  ->  enableMod (master switch),
         enableWaterLavaImpactParticles (Water/Lava impact particle toggle).

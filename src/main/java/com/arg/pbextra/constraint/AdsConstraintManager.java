@@ -14,12 +14,12 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 import software.bernie.geckolib.constant.DataTickets;
-import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.state.BoneSnapshot;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.state.BoneSnapshot;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,7 +34,7 @@ public final class AdsConstraintManager {
     private static long lastCorrectionTraceTime;
 
 
-    private static CoreGeoBone correctedCamera;
+    private static GeoBone correctedCamera;
     private static float correctedCameraRotX;
     private static float correctedCameraRotY;
     private static float correctedCameraRotZ;
@@ -84,14 +84,14 @@ public final class AdsConstraintManager {
         LocalPlayer player = Minecraft.getInstance().player;
         GunClientState gunState = player == null ? null : GunClientState.getMainHeldState(player);
         double progress = gunState == null ? 0.0 : resolveAimingProgress(gunState);
-        CoreGeoBone root = processor.getBone(AdsConstraintConstants.ROOT_BONE);
-        CoreGeoBone constraint = processor.getBone(AdsConstraintConstants.CONSTRAINT_BONE);
-        CoreGeoBone camera = config.isCamera() ? processor.getBone(AdsConstraintConstants.CAMERA_BONE) : null;
+        GeoBone root = processor.getBone(AdsConstraintConstants.ROOT_BONE);
+        GeoBone constraint = processor.getBone(AdsConstraintConstants.CONSTRAINT_BONE);
+        GeoBone camera = config.isCamera() ? processor.getBone(AdsConstraintConstants.CAMERA_BONE) : null;
 
         if (gateTraceDue()) {
             LOGGER.debug(
                     "AdsConstraint: item={} enabled={} cameraFlag={} player={} gunState={} gunMatches={} progress={} main={} constraint={} cameraBone={}",
-                    ForgeRegistries.ITEMS.getKey(stack.getItem()),
+                    BuiltInRegistries.ITEM.getKey(stack.getItem()),
                     config.isEnabled(),
                     config.isCamera(),
                     player != null,
@@ -204,7 +204,7 @@ public final class AdsConstraintManager {
 
 
 
-    private static boolean cameraAuthoredSinceLastCorrection(CoreGeoBone camera) {
+    private static boolean cameraAuthoredSinceLastCorrection(GeoBone camera) {
         if (camera != correctedCamera) {
             return true;
         }
@@ -217,7 +217,7 @@ public final class AdsConstraintManager {
     }
 
     /** Remembers what the last camera correction left on the bone. */
-    private static void rememberCameraCorrection(CoreGeoBone camera) {
+    private static void rememberCameraCorrection(GeoBone camera) {
         correctedCamera = camera;
         correctedCameraRotX = camera.getRotX();
         correctedCameraRotY = camera.getRotY();
@@ -228,7 +228,7 @@ public final class AdsConstraintManager {
     }
 
 
-    private static void applyCorrectiveTransform(CoreGeoBone target,
+    private static void applyCorrectiveTransform(GeoBone target,
             float rotRetX, float rotRetY, float rotRetZ,
             float posRetX, float posRetY, float posRetZ,
             double progress) {
@@ -295,8 +295,8 @@ public final class AdsConstraintManager {
         return 0.0;
     }
 
-    private static void warnMissingBonesOnce(GunItem gun, CoreGeoBone rootBone) {
-        ResourceLocation id = ForgeRegistries.ITEMS.getKey(gun);
+    private static void warnMissingBonesOnce(GunItem gun, GeoBone rootBone) {
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(gun);
         String key = id == null ? gun.getClass().getName() : id.toString();
         if (WARNED_WEAPONS.add(key)) {
             LOGGER.warn("AdsConstraint is enabled for '{}' but the model is missing the '{}' bone{}; "

@@ -3,9 +3,11 @@ package com.arg.pbextra;
 import com.arg.pbextra.config.PointBlankExtraConfig;
 import com.arg.pbextra.network.ModNetwork;
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
 
 @Mod(PointBlankExtraFeatures.MOD_ID)
@@ -15,12 +17,12 @@ public final class PointBlankExtraFeatures {
     public static final String NAME = "Point Blank Extra Features";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public PointBlankExtraFeatures(FMLJavaModLoadingContext context) {
-        context.registerConfig(
+    public PointBlankExtraFeatures(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerConfig(
                 ModConfig.Type.CLIENT,
                 PointBlankExtraConfig.SPEC
         );
 
-        ModNetwork.register();
+        modEventBus.addListener((RegisterPayloadHandlersEvent event) -> ModNetwork.register(event));
     }
 }

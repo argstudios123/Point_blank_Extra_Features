@@ -7,10 +7,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -107,7 +107,9 @@ public final class WeaponExtraDataManager {
      * dedicated server.
      */
     private static void invalidateClientCaches() {
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ReserveAmmoCounter.invalidate());
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ReserveAmmoCounter.invalidate();
+        }
     }
 
     private static void logIndexed(Map<String, WeaponExtraData> data) {
@@ -167,7 +169,7 @@ public final class WeaponExtraDataManager {
         if (stack == null || stack.isEmpty()) {
             return WeaponExtraData.EMPTY;
         }
-        return getData(ForgeRegistries.ITEMS.getKey(stack.getItem()));
+        return getData(BuiltInRegistries.ITEM.getKey(stack.getItem()));
     }
 
     /** Whether the given item has toggle aiming enabled via its weapon JSON. */

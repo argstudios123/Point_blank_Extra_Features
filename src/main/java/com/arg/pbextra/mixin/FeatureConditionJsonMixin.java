@@ -8,7 +8,6 @@ import com.vicmatskiv.pointblank.feature.AimingFeature;
 import com.vicmatskiv.pointblank.feature.AlternatingMuzzleFeature;
 import com.vicmatskiv.pointblank.feature.AmmoCapacityFeature;
 import com.vicmatskiv.pointblank.feature.DamageFeature;
-import com.vicmatskiv.pointblank.feature.DurabilityFeature;
 import com.vicmatskiv.pointblank.feature.FireModeFeature;
 import com.vicmatskiv.pointblank.feature.MuzzleFlashFeature;
 import com.vicmatskiv.pointblank.feature.RecoilFeature;
@@ -30,7 +29,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
         AlternatingMuzzleFeature.Builder.class,
         AmmoCapacityFeature.Builder.class,
         DamageFeature.Builder.class,
-        DurabilityFeature.Builder.class,
         FireModeFeature.Builder.class,
         MuzzleFlashFeature.Builder.class,
         RecoilFeature.Builder.class,

@@ -3,7 +3,7 @@ package com.arg.pbextra.uieditor;
 import com.arg.pbextra.client.UiConfigRepository;
 import com.arg.pbextra.integration.PointBlankJsonIntegration;
 import com.google.gson.JsonObject;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

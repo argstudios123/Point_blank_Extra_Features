@@ -1,8 +1,8 @@
 package com.arg.pbextra.melee;
 
 import com.vicmatskiv.pointblank.item.GunItem;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.PlayState;
 
 import java.util.function.ObjDoubleConsumer;
 

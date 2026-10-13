@@ -800,7 +800,7 @@ public final class UiEditorScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTick);
 
         UiPreviewRenderer.render(graphics, font, layout(), viewport, canvasLeft, canvasTop,
                 canvasRight, canvasBottom, true, selectedKey);
@@ -993,7 +993,8 @@ public final class UiEditorScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        double delta = scrollY;
         if (searchOpen) {
             scrollSearchResults((int) Math.round(-delta));
             return true;

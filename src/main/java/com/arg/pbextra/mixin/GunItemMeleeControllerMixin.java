@@ -5,13 +5,13 @@ import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.arg.pbextra.melee.MeleeAnimationController;
 import com.arg.pbextra.melee.MeleeConstants;
 import com.vicmatskiv.pointblank.item.GunItem;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import software.bernie.geckolib.core.animation.AnimatableManager;
-import software.bernie.geckolib.core.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimatableManager;
+import software.bernie.geckolib.animation.AnimationController;
 
 
 @Mixin(value = GunItem.class, remap = false)
@@ -23,7 +23,7 @@ public abstract class GunItemMeleeControllerMixin {
 
         GunItem gun = (GunItem) (Object) this;
 
-        var registryKey = ForgeRegistries.ITEMS.getKey(gun);
+        var registryKey = BuiltInRegistries.ITEM.getKey(gun);
         if (registryKey == null) {
             return;
         }

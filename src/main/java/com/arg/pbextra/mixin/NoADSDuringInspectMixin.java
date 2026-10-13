@@ -5,12 +5,12 @@ import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
-import com.vicmatskiv.pointblank.network.Network;
+import com.vicmatskiv.pointblank.Platform;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -40,7 +40,7 @@ public abstract class NoADSDuringInspectMixin {
         // so GunItem.isAiming(ItemStack) no longer forces sprint off.
         self.setAiming(false);
         if (player instanceof Player p) {
-            Network.networkChannel.sendToServer(
+            Platform.getInstance().getNetworkService().sendToServer(
                     new AimingChangeRequestPacket(self.getId(), p.getInventory().selected, false));
         }
     }
@@ -54,7 +54,7 @@ public abstract class NoADSDuringInspectMixin {
         if (gun == null) {
             return false;
         }
-        ResourceLocation key = ForgeRegistries.ITEMS.getKey(gun);
+        ResourceLocation key = BuiltInRegistries.ITEM.getKey(gun);
         return key != null && WeaponExtraDataManager.isNoADSDuringInspect(key);
     }
 }

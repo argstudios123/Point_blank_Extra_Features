@@ -3,12 +3,8 @@ package com.arg.pbextra.network;
 import com.arg.pbextra.melee.MeleeImpactPacket;
 import com.arg.pbextra.melee.MeleeRequestPacket;
 import com.arg.pbextra.melee.MeleeResponsePacket;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
-import net.minecraftforge.network.simple.SimpleChannel;
-
-import java.util.Optional;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 /**
  * The addon's own network channel. Kept separate from Point Blank's channel so
@@ -18,48 +14,35 @@ public final class ModNetwork {
 
     private static final String PROTOCOL_VERSION = "1";
 
-    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
-            ResourceLocation.fromNamespaceAndPath("pointblankextra", "main"),
-            () -> PROTOCOL_VERSION,
-            PROTOCOL_VERSION::equals,
-            PROTOCOL_VERSION::equals
-    );
-
     private ModNetwork() {
     }
 
-    public static void register() {
-        int id = 0;
-        CHANNEL.registerMessage(id++,
-                MeleeRequestPacket.class,
-                MeleeRequestPacket::encode,
-                MeleeRequestPacket::decode,
+    public static void register(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+        registrar.playToServer(
+                MeleeRequestPacket.TYPE,
+                MeleeRequestPacket.STREAM_CODEC,
                 MeleeRequestPacket::handle);
-        CHANNEL.registerMessage(id++,
-                MeleeResponsePacket.class,
-                MeleeResponsePacket::encode,
-                MeleeResponsePacket::decode,
+        // Server -> client: the server picks the animation and tells the shooter to play it.
+        registrar.playToClient(
+                MeleeResponsePacket.TYPE,
+                MeleeResponsePacket.STREAM_CODEC,
                 MeleeResponsePacket::handle);
-        CHANNEL.registerMessage(id++,
-                MeleeImpactPacket.class,
-                MeleeImpactPacket::encode,
-                MeleeImpactPacket::decode,
+        registrar.playToServer(
+                MeleeImpactPacket.TYPE,
+                MeleeImpactPacket.STREAM_CODEC,
                 MeleeImpactPacket::handle);
         // Server -> client only: the editor's configuration is read and written on
         // the client because the HUD it edits is rendered there.
-        CHANNEL.registerMessage(id++,
-                OpenUiEditorPacket.class,
-                OpenUiEditorPacket::encode,
-                OpenUiEditorPacket::decode,
-                OpenUiEditorPacket::handle,
-                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        registrar.playToClient(
+                OpenUiEditorPacket.TYPE,
+                OpenUiEditorPacket.STREAM_CODEC,
+                OpenUiEditorPacket::handle);
         // Server -> client only: Point Blank's content pack data is re-read on the
         // client, so /pbextra reload only asks the clients to do the work.
-        CHANNEL.registerMessage(id++,
-                ReloadContentPacket.class,
-                ReloadContentPacket::encode,
-                ReloadContentPacket::decode,
-                ReloadContentPacket::handle,
-                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        registrar.playToClient(
+                ReloadContentPacket.TYPE,
+                ReloadContentPacket.STREAM_CODEC,
+                ReloadContentPacket::handle);
     }
 }

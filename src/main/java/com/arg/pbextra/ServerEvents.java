@@ -6,20 +6,19 @@ import com.arg.pbextra.data.WeaponExtraDataManager;
 import com.arg.pbextra.melee.MeleeManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 
 public final class ServerEvents {
 
     private ServerEvents() {
     }
 
-    @Mod.EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID,
-            bus = Mod.EventBusSubscriber.Bus.FORGE)
-    public static final class ForgeBus {
+    @EventBusSubscriber(modid = PointBlankExtraFeatures.MOD_ID)
+    public static final class GameBus {
 
         @SubscribeEvent
         public static void onAddReloadListeners(AddReloadListenerEvent event) {

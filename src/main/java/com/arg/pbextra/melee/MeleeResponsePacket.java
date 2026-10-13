@@ -4,7 +4,7 @@ import com.arg.pbextra.client.MeleeAnimationHandler;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 
@@ -12,7 +12,7 @@ public final class MeleeResponsePacket implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MeleeResponsePacket> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "melee_response"));
+                    Identifier.fromNamespaceAndPath("pointblankextra", "melee_response"));
 
     public static final StreamCodec<FriendlyByteBuf, MeleeResponsePacket> STREAM_CODEC =
             StreamCodec.ofMember(MeleeResponsePacket::encode, MeleeResponsePacket::decode);

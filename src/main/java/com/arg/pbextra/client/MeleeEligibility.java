@@ -21,9 +21,23 @@ public final class MeleeEligibility {
 
     public static boolean isMeleeAllowed(LocalPlayer player, boolean offhand) {
         GunClientState state = offhand
-                ? GunClientState.getOffhandState(player)
-                : GunClientState.getMainHandState(player);
+                ? offhandState(player)
+                : GunClientState.getMainHeldState(player);
         return check(player, state);
+    }
+
+    /**
+     * Point Blank 26.1.2 exposes the offhand state through the offhand gun context
+     * rather than a dedicated {@code getOffhandState} helper.
+     */
+    private static GunClientState offhandState(LocalPlayer player) {
+        com.vicmatskiv.pointblank.item.GunItem.OperableGunContext context =
+                com.vicmatskiv.pointblank.item.GunItem.resolveOffhandGunContext(player);
+        if (context == null) {
+            return null;
+        }
+        return GunClientState.getState(player, context.itemStack(), context.slotIndex(),
+                context.offhand());
     }
 
     private static boolean check(LocalPlayer player, GunClientState state) {

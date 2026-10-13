@@ -3,7 +3,7 @@ package com.arg.pbextra.melee;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
@@ -12,7 +12,7 @@ public final class MeleeImpactPacket implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<MeleeImpactPacket> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "melee_impact"));
+                    Identifier.fromNamespaceAndPath("pointblankextra", "melee_impact"));
 
     public static final StreamCodec<FriendlyByteBuf, MeleeImpactPacket> STREAM_CODEC =
             StreamCodec.ofMember(MeleeImpactPacket::encode, MeleeImpactPacket::decode);

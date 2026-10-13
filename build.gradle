@@ -13,8 +13,8 @@ base {
     archivesName = mod_id
 }
 
-// NeoForge 1.21.1 runs on Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// NeoForge 26.1.2 runs on Java 25.
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 
@@ -32,13 +32,13 @@ repositories {
 neoForge {
     version = project.neo_version
 
-    parchment {
-        minecraftVersion = project.parchment_minecraft_version
-        mappingsVersion = project.parchment_mappings_version
-    }
+    // NeoForge 26.1.2 is built on the official (Mojang) names and ships the
+    // parameter names itself, so no Parchment layer is configured (matching the
+    // NeoForge 26.1.2 mod development kit). Parchment does not publish 26.1.2
+    // mappings.
 
     // The addon's own mixins only ever target Vic's Point Blank classes with
-    // "remap = false", and NeoForge 1.21.1 runs one official-named namespace, so
+    // "remap = false", and NeoForge 26.1.2 runs one official-named namespace, so
     // no mixin refmap is required (Point Blank and GeckoLib ship without one too).
 
     runs {
@@ -77,11 +77,12 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    // Vic's Point Blank (NeoForge 1.21.1) and GeckoLib (NeoForge 1.21.1).
-    // NeoForge mods are published in the official (Mojang) namespace, so they are
-    // used directly - no deobfuscation step is needed.
-    implementation "curse.maven:vics-point-blank-961053:8855569"
-    implementation "curse.maven:geckolib-388172:8893490"
+    // Vic's Point Blank (NeoForge 26.1.2, CurseForge file 8938498) and GeckoLib
+    // (NeoForge 26.1.2, CurseForge file 8327201). NeoForge mods are published in
+    // the official (Mojang) namespace, so they are used directly - no
+    // deobfuscation step is needed.
+    implementation "curse.maven:vics-point-blank-961053:8938498"
+    implementation "curse.maven:geckolib-388172:8327201"
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

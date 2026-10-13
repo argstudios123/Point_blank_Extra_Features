@@ -1,7 +1,7 @@
 package com.arg.pbextra.client.gui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 
@@ -28,23 +28,23 @@ public final class ToggleWidget extends FlatButton {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(net.minecraft.client.input.InputWithModifiers input) {
         boolean next = !Boolean.TRUE.equals(getter.get());
         setter.accept(next);
     }
 
     @Override
-    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         boolean value = Boolean.TRUE.equals(getter.get());
         Component message = value ? ON_TEXT : OFF_TEXT;
         setMessage(message);
-        super.renderWidget(graphics, mouseX, mouseY, partialTick);
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
         // The base class already drew the label at the left; keep the state on
         // the right so long labels never collide with it.
         if (value) {
-            graphics.drawString(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, ON_COLOR, false);
+            graphics.text(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, ON_COLOR, false);
         } else {
-            graphics.drawString(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, OFF_COLOR, false);
+            graphics.text(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, OFF_COLOR, false);
         }
     }
 

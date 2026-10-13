@@ -1,42 +1,34 @@
 package com.arg.pbextra.melee;
 
 import com.vicmatskiv.pointblank.item.GunItem;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.PlayState;
-
-import java.util.function.ObjDoubleConsumer;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.cache.animation.keyframeevent.SoundKeyframeData;
 
 
 public class MeleeAnimationController extends AnimationController<GunItem> {
 
-    public static ObjDoubleConsumer<MeleeAnimationController> positionListener;
-    public static AnimationController.SoundKeyframeHandler<GunItem> soundKeyframeListener;
+    public static AnimationController.KeyframeEventHandler<GunItem, SoundKeyframeData> soundKeyframeListener;
 
     public MeleeAnimationController(GunItem gun, String name) {
         // The state handler always returns STOP: the controller is idle unless a
-        // melee animation is triggered, and GeckoLib bypasses the state handler
-        // entirely while a triggered animation is playing.
-        super(gun, name, 0, state -> PlayState.STOP);
+        // melee animation is triggered, and GeckoLib takes the triggered-animation
+        // path while a triggered animation is playing.
+        super(name, 0, state -> PlayState.STOP);
 
         this.setSoundKeyframeHandler(event -> {
-            AnimationController.SoundKeyframeHandler<GunItem> listener = soundKeyframeListener;
+            AnimationController.KeyframeEventHandler<GunItem, SoundKeyframeData> listener = soundKeyframeListener;
             if (listener != null) {
                 listener.handle(event);
             }
         });
     }
 
+    /**
+     * Restarts the animation time at 0 so a new swing always plays from the start,
+     * even if the previous swing is still running.
+     */
     public void restartAnimationTime() {
-        this.shouldResetTick = true;
-    }
-
-    @Override
-    protected double adjustTick(double tick) {
-        double position = super.adjustTick(tick);
-        ObjDoubleConsumer<MeleeAnimationController> listener = positionListener;
-        if (listener != null) {
-            listener.accept(this, position);
-        }
-        return position;
+        this.setAnimationTime(0.0);
     }
 }

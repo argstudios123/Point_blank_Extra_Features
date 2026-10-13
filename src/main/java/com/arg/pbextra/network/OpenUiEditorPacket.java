@@ -5,7 +5,7 @@ import com.arg.pbextra.uieditor.UiDefinitionKind;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
@@ -21,7 +21,7 @@ public final class OpenUiEditorPacket implements CustomPacketPayload {
 
     public static final CustomPacketPayload.Type<OpenUiEditorPacket> TYPE =
             new CustomPacketPayload.Type<>(
-                    ResourceLocation.fromNamespaceAndPath("pointblankextra", "open_ui_editor"));
+                    Identifier.fromNamespaceAndPath("pointblankextra", "open_ui_editor"));
 
     public static final StreamCodec<FriendlyByteBuf, OpenUiEditorPacket> STREAM_CODEC =
             StreamCodec.ofMember(OpenUiEditorPacket::encode, OpenUiEditorPacket::decode);

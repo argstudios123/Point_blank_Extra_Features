@@ -10,7 +10,7 @@ import com.vicmatskiv.pointblank.registry.AmmoUiDefinition;
 import com.vicmatskiv.pointblank.registry.AmmoUiRegistry;
 import com.vicmatskiv.pointblank.registry.HeatUiDefinition;
 import com.vicmatskiv.pointblank.registry.HeatUiRegistry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.repository.RepositorySource;
 import net.minecraft.server.packs.resources.Resource;
@@ -198,7 +198,7 @@ public final class PointBlankContentReload {
         // registries and must happen before the result is reported.
         WeaponExtraDataManager.Result weapons = WeaponExtraDataManager.reloadTracked(resources);
 
-        Map<ResourceLocation, Resource> found = resources.listResources(UI_DIRECTORY,
+        Map<Identifier, Resource> found = resources.listResources(UI_DIRECTORY,
                 PointBlankContentReload::isUiDefinition);
 
         Map<String, AmmoUiDefinition> ammo = new LinkedHashMap<>();
@@ -208,10 +208,10 @@ public final class PointBlankContentReload {
         List<String> skipped = new ArrayList<>();
         List<String> failures = new ArrayList<>(weapons.failures());
 
-        List<ResourceLocation> locations = new ArrayList<>(found.keySet());
-        locations.sort(Comparator.comparing(ResourceLocation::toString));
+        List<Identifier> locations = new ArrayList<>(found.keySet());
+        locations.sort(Comparator.comparing(Identifier::toString));
 
-        for (ResourceLocation location : locations) {
+        for (Identifier location : locations) {
             String path = location.getPath();
             boolean heatEntry = path.startsWith(HEAT_DIRECTORY);
             String stem = path.substring((heatEntry ? HEAT_DIRECTORY : UI_DIRECTORY + "/").length());
@@ -305,7 +305,7 @@ public final class PointBlankContentReload {
         }
     }
 
-    private static boolean isUiDefinition(ResourceLocation location) {
+    private static boolean isUiDefinition(Identifier location) {
         String path = location.getPath();
         return NAMESPACE.equals(location.getNamespace())
                 && path.startsWith(UI_DIRECTORY + "/")

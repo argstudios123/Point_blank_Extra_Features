@@ -34,7 +34,7 @@ public abstract class GunItemOverlayReserveAmmoMixin {
 
 
     @Redirect(
-            method = "renderGunOverlay2(Lnet/minecraft/client/gui/GuiGraphics;"
+            method = "renderGunOverlay2(Lnet/minecraft/client/gui/GuiGraphicsExtractor;"
                     + "Lnet/minecraft/world/item/ItemStack;"
                     + "Lcom/vicmatskiv/pointblank/Config$AmmoIndicatorPlacement;)V",
             at = @At(

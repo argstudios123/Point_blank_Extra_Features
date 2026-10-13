@@ -11,12 +11,13 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.slf4j.Logger;
-import software.bernie.geckolib.animatable.GeoAnimatable;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.animation.keyframe.event.SoundKeyframeEvent;
+import com.geckolib.animatable.GeoAnimatable;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animation.state.KeyFrameEvent;
+import com.geckolib.cache.animation.keyframeevent.SoundKeyframeData;
 
 import java.util.Locale;
 import java.util.Map;
@@ -38,7 +39,6 @@ public final class MeleeAnimationHandler {
     }
 
     public static void install() {
-        MeleeAnimationController.positionListener = MeleeAnimationHandler::onAnimationPosition;
         MeleeAnimationController.soundKeyframeListener = MeleeAnimationHandler::onSoundKeyframe;
     }
 
@@ -75,7 +75,7 @@ public final class MeleeAnimationHandler {
         meleeController.restartAnimationTime();
         meleeController.triggerableAnim(MeleeConstants.MELEE_TRIGGER,
                 RawAnimation.begin().thenPlay(animationName));
-        if (!meleeController.tryTriggerAnimation(MeleeConstants.MELEE_TRIGGER)) {
+        if (!meleeController.triggerAnimation(MeleeConstants.MELEE_TRIGGER)) {
             LOGGER.warn("Melee animation '{}' could not be triggered on controller '{}'",
                     animationName, MeleeConstants.MELEE_CONTROLLER);
             return;
@@ -96,21 +96,24 @@ public final class MeleeAnimationHandler {
     }
 
 
+    /**
+     * Watchdog for the swing that is currently playing. GeckoLib 5 no longer exposes
+     * an overridable tick hook, so the handler polls the active controller's animation
+     * time once per client tick instead; the reported time is in seconds.
+     */
     private static void onAnimationPosition(MeleeAnimationController controller,
-                                            double positionTicks) {
+                                            double positionSeconds) {
         MeleeAnimationController active = activeController;
         if (active == null || controller != active) {
             return;
         }
-        if (!controller.isPlayingTriggeredAnimation()
-                || controller.getAnimationState() == AnimationController.State.STOPPED) {
-            // Not this swing's animation playing any more. GeckoLib keeps returning
-            // the age since the last animation started for a stopped controller, so
-            // such positions must not be mistaken for playback.
+        if (!controller.isPlayingTriggeredAnimation()) {
+            // Not this swing's animation playing any more, so GeckoLib's animation
+            // time must not be mistaken for playback.
             return;
         }
 
-        double positionMillis = positionTicks * MeleeConstants.ANIMATION_MILLIS_PER_TICK;
+        double positionMillis = positionSeconds * MeleeConstants.ANIMATION_MILLIS_PER_SECOND;
         if (playbackObserved && positionMillis < lastPositionMillis) {
             // The animation restarted behind our back; treat the swing as new.
             impactAnnounced = false;
@@ -120,7 +123,7 @@ public final class MeleeAnimationHandler {
 
         if (!impactAnnounced && positionMillis >= preMeleeMillis) {
             impactAnnounced = true;
-            PacketDistributor.sendToServer(new MeleeImpactPacket(activeAnimationName));
+            ClientPacketDistributor.sendToServer(new MeleeImpactPacket(activeAnimationName));
             LOGGER.info("Melee '{}' reached its impact at animation time {} ms (preMelee {} ms)",
                     activeAnimationName, format(positionMillis), preMeleeMillis);
         }
@@ -132,18 +135,18 @@ public final class MeleeAnimationHandler {
             // Stopping makes the controller report a finished animation, so it stops
             // producing pose data and Point Blank's own idle/fire/draw/reload
             // controllers take the pose back over on their own.
-            controller.stop();
+            controller.stopTriggeredAnimation();
         }
     }
 
   // here this will play  sound effects from sounds keyframes
-    private static void onSoundKeyframe(SoundKeyframeEvent<GunItem> event) {
+    private static void onSoundKeyframe(KeyFrameEvent<GunItem, SoundKeyframeData> event) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) {
             return;
         }
 
-        String soundName = event.getKeyframeData().getSound();
+        String soundName = event.keyframeData().getSound();
         SoundEvent soundEvent = SoundRegistry.getSoundEvent(soundName);
         if (soundEvent == null) {
             LOGGER.warn("Melee animation '{}' requests the sound '{}', which is not registered "
@@ -158,9 +161,14 @@ public final class MeleeAnimationHandler {
 
     public static void tick() {
         MeleeAnimationController active = activeController;
-        if (active != null && !active.isPlayingTriggeredAnimation()) {
-            clear();
+        if (active == null) {
+            return;
         }
+        if (!active.isPlayingTriggeredAnimation()) {
+            clear();
+            return;
+        }
+        onAnimationPosition(active, active.getCurrentAnimationTime());
     }
 
     private static void clear() {

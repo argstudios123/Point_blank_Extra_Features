@@ -6,7 +6,7 @@ import com.arg.pbextra.uieditor.UiEditorModel;
 import com.arg.pbextra.uieditor.UiTextBlock;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 
 import java.util.ArrayList;
@@ -255,14 +255,14 @@ public final class UiPreviewLayout {
         return alpha << 24 | red << 16 | green << 8 | blue;
     }
 
-    public static ResourceLocation texture(String raw) {
+    public static Identifier texture(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;
         }
         String value = raw.trim();
         if (value.contains(":")) {
-            return ResourceLocation.tryParse(value);
+            return Identifier.tryParse(value);
         }
-        return ResourceLocation.tryParse("pointblank:" + value);
+        return Identifier.tryParse("pointblank:" + value);
     }
 }

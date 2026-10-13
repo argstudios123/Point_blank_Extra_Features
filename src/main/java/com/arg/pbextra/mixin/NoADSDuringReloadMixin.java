@@ -6,7 +6,7 @@ import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.item.GunItem;
 import com.vicmatskiv.pointblank.network.AimingChangeRequestPacket;
 import com.vicmatskiv.pointblank.Platform;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -40,7 +40,7 @@ public abstract class NoADSDuringReloadMixin {
         self.setAiming(false);
         if (player instanceof Player p) {
             Platform.getInstance().getNetworkService().sendToServer(
-                    new AimingChangeRequestPacket(self.getId(), p.getInventory().selected, false));
+                    new AimingChangeRequestPacket(self.getId(), p.getInventory().getSelectedSlot(), false));
         }
     }
 
@@ -53,7 +53,7 @@ public abstract class NoADSDuringReloadMixin {
         if (gun == null) {
             return false;
         }
-        ResourceLocation key = BuiltInRegistries.ITEM.getKey(gun);
+        Identifier key = BuiltInRegistries.ITEM.getKey(gun);
         return key != null && WeaponExtraDataManager.isDisableAdsDuringReload(key);
     }
 }

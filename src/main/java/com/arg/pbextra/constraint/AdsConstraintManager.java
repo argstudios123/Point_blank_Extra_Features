@@ -6,24 +6,32 @@ import com.mojang.logging.LogUtils;
 import com.vicmatskiv.pointblank.client.BiDirectionalInterpolator;
 import com.vicmatskiv.pointblank.client.GunClientState;
 import com.vicmatskiv.pointblank.client.GunStateListener;
-import com.vicmatskiv.pointblank.client.controller.BlendingAnimationProcessor;
+import com.vicmatskiv.pointblank.constant.PointBlankDataTickets;
 import com.vicmatskiv.pointblank.item.GunItem;
+import com.geckolib.animation.state.BoneSnapshot;
+import com.geckolib.cache.model.GeoBone;
+import com.geckolib.constant.DataTickets;
+import com.geckolib.renderer.base.BoneSnapshots;
+import com.geckolib.renderer.base.RenderPassInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.registries.BuiltInRegistries;
 import org.slf4j.Logger;
-import software.bernie.geckolib.constant.DataTickets;
-import software.bernie.geckolib.cache.object.GeoBone;
-import software.bernie.geckolib.animation.AnimationState;
-import software.bernie.geckolib.animation.state.BoneSnapshot;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Point Blank 26.1.2 renders through GeckoLib 5, where a bone's animation result for one
+ * frame is a {@link BoneSnapshot} rather than a mutable {@link GeoBone}. The constraint is
+ * therefore applied to the snapshots of the weapon root ("main") and of the "_camera_" bone
+ * right before Point Blank reads the camera bone, which keeps the original behaviour intact.
+ */
 public final class AdsConstraintManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -33,8 +41,7 @@ public final class AdsConstraintManager {
     private static long lastGateTraceTime;
     private static long lastCorrectionTraceTime;
 
-
-    private static GeoBone correctedCamera;
+    private static BoneSnapshot correctedCamera;
     private static float correctedCameraRotX;
     private static float correctedCameraRotY;
     private static float correctedCameraRotZ;
@@ -63,18 +70,20 @@ public final class AdsConstraintManager {
         return false;
     }
 
-    public static void apply(BlendingAnimationProcessor<?> processor, AnimationState<?> state) {
+    public static void apply(RenderPassInfo<?> renderPassInfo, BoneSnapshots snapshots) {
         if (!PointBlankExtraConfig.ENABLE_MOD.get()) {
             return;
         }
 
-        ItemDisplayContext displayContext = state.getData(DataTickets.ITEM_RENDER_PERSPECTIVE);
+        ItemDisplayContext displayContext =
+                renderPassInfo.renderState().getGeckolibData(DataTickets.ITEM_RENDER_PERSPECTIVE);
         if (displayContext != ItemDisplayContext.FIRST_PERSON_RIGHT_HAND
                 && displayContext != ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
             return;
         }
 
-        ItemStack stack = state.getData(DataTickets.ITEMSTACK);
+        ItemStack stack =
+                renderPassInfo.renderState().getGeckolibData(PointBlankDataTickets.ITEMSTACK);
         if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof GunItem gun)) {
             return;
         }
@@ -84,9 +93,12 @@ public final class AdsConstraintManager {
         LocalPlayer player = Minecraft.getInstance().player;
         GunClientState gunState = player == null ? null : GunClientState.getMainHeldState(player);
         double progress = gunState == null ? 0.0 : resolveAimingProgress(gunState);
-        GeoBone root = processor.getBone(AdsConstraintConstants.ROOT_BONE);
-        GeoBone constraint = processor.getBone(AdsConstraintConstants.CONSTRAINT_BONE);
-        GeoBone camera = config.isCamera() ? processor.getBone(AdsConstraintConstants.CAMERA_BONE) : null;
+
+        Optional<BoneSnapshot> root = snapshots.get(AdsConstraintConstants.ROOT_BONE);
+        Optional<BoneSnapshot> constraint = snapshots.get(AdsConstraintConstants.CONSTRAINT_BONE);
+        Optional<BoneSnapshot> camera = config.isCamera()
+                ? snapshots.get(AdsConstraintConstants.CAMERA_BONE)
+                : Optional.empty();
 
         if (gateTraceDue()) {
             LOGGER.debug(
@@ -98,9 +110,9 @@ public final class AdsConstraintManager {
                     gunState != null,
                     gunState != null && gunState.getGunItem() == gun,
                     progress,
-                    root != null,
-                    constraint != null,
-                    camera != null);
+                    root.isPresent(),
+                    constraint.isPresent(),
+                    camera.isPresent());
         }
 
         if (!config.isEnabled()) {
@@ -114,35 +126,45 @@ public final class AdsConstraintManager {
         }
 
         // Point Blank turns the weapon model's "_camera_" bone into first-person camera
-        // movement: GunItemRenderer#renderRecursively captures its rotX/rotY/rotZ while the
-        // weapon is rendered and ClientEventHandler#onPreRenderHandEvent applies them
-        // (negated, on X/Y/Z) to the first-person pose stack. That rotation therefore *is*
-        // Point Blank's camera animation - the equip/draw, idle, firing, reload and inspect
-        // animations all drive it. The camera constraint below therefore never resets the
-        // bone and never works from its own previous result: it scales the value the
-        // animation just wrote, once, and only while ADS is active.
+        // movement: GunItemRenderer#adjustModelBonesForRender captures its rotX/rotY/rotZ
+        // while the weapon is rendered and ClientEventHandler#onPreRenderHandEvent applies
+        // them (negated, on X/Y/Z) to the first-person pose stack. That rotation therefore
+        // *is* Point Blank's camera animation - the equip/draw, idle, firing, reload and
+        // inspect animations all drive it. The camera constraint below therefore never
+        // resets the bone and never works from its own previous result: it scales the
+        // value the animation just wrote, once, and only while ADS is active.
 
         if (progress <= 0.0) {
             return;
         }
-        if (root == null || constraint == null) {
+
+        // GeckoLib 5 keeps a snapshot's rotation/translation relative to the bone's authored
+        // (bind) transform, so the constraint's bind comparison value is 0 for both rotation
+        // and translation - exactly the deviation the old absolute values compared against.
+        GeoBone constraintBone = renderPassInfo.model()
+                .getBone(AdsConstraintConstants.CONSTRAINT_BONE)
+                .orElse(null);
+
+        if (root.isEmpty() || constraint.isEmpty()) {
             // This model has no weapon-root bones, so the pose constraint cannot be applied.
             // The camera constraint below does not depend on them and still runs.
-            warnMissingBonesOnce(gun, root);
+            warnMissingBonesOnce(gun, root.isPresent());
         } else {
             // The weapon root always uses the per-axis fractions read from the model's
             // "constraint" bone; this is the original, unchanged behaviour.
-            applyCorrectiveTransform(root,
-                    AdsConstraintMath.rotationRetention(constraint.getRotX()),
-                    AdsConstraintMath.rotationRetention(constraint.getRotY()),
-                    AdsConstraintMath.rotationRetention(constraint.getRotZ()),
-                    AdsConstraintMath.positionRetention(constraint.getPosX()),
-                    AdsConstraintMath.positionRetention(constraint.getPosY()),
-                    AdsConstraintMath.positionRetention(constraint.getPosZ()),
+            BoneSnapshot constraintSnapshot = constraint.get();
+            applyCorrectiveTransform(root.get(),
+                    AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.X)),
+                    AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.Y)),
+                    AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.Z)),
+                    AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateX()),
+                    AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateY()),
+                    AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateZ()),
                     progress);
         }
 
-        if (camera != null) {
+        if (camera.isPresent()) {
+            BoneSnapshot cameraSnapshot = camera.get();
             float rotRetX;
             float rotRetY;
             float rotRetZ;
@@ -161,15 +183,16 @@ public final class AdsConstraintManager {
                 posRetX = cameraRetention;
                 posRetY = cameraRetention;
                 posRetZ = cameraRetention;
-            } else if (constraint != null) {
+            } else if (constraint.isPresent()) {
                 // Backwards compatible: without cameraConstraint the camera keeps using the
                 // same per-axis fractions as the weapon root.
-                rotRetX = AdsConstraintMath.rotationRetention(constraint.getRotX());
-                rotRetY = AdsConstraintMath.rotationRetention(constraint.getRotY());
-                rotRetZ = AdsConstraintMath.rotationRetention(constraint.getRotZ());
-                posRetX = AdsConstraintMath.positionRetention(constraint.getPosX());
-                posRetY = AdsConstraintMath.positionRetention(constraint.getPosY());
-                posRetZ = AdsConstraintMath.positionRetention(constraint.getPosZ());
+                BoneSnapshot constraintSnapshot = constraint.get();
+                rotRetX = AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.X));
+                rotRetY = AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.Y));
+                rotRetZ = AdsConstraintMath.rotationRetention(constraintRotation(constraintBone, constraintSnapshot, Axis.Z));
+                posRetX = AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateX());
+                posRetY = AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateY());
+                posRetZ = AdsConstraintMath.positionRetention(constraintSnapshot.getTranslateZ());
             } else {
                 // No cameraConstraint and no "constraint" bone to read fractions from: leave the
                 // camera exactly as the weapon animation produced it.
@@ -187,7 +210,7 @@ public final class AdsConstraintManager {
             // equip/draw, idle, firing, reload and inspect camera animation intact, makes the
             // correction idempotent and stops it from accumulating (creeping further towards
             // the bind pose) while a pose is held.
-            if (!cameraAuthoredSinceLastCorrection(camera)) {
+            if (!cameraAuthoredSinceLastCorrection(cameraSnapshot)) {
                 rotRetX = AdsConstraintMath.FULL_RETENTION;
                 rotRetY = AdsConstraintMath.FULL_RETENTION;
                 rotRetZ = AdsConstraintMath.FULL_RETENTION;
@@ -196,39 +219,62 @@ public final class AdsConstraintManager {
                 posRetZ = AdsConstraintMath.FULL_RETENTION;
             }
 
-            applyCorrectiveTransform(camera, rotRetX, rotRetY, rotRetZ,
+            applyCorrectiveTransform(cameraSnapshot, rotRetX, rotRetY, rotRetZ,
                     posRetX, posRetY, posRetZ, progress);
-            rememberCameraCorrection(camera);
+            rememberCameraCorrection(cameraSnapshot);
         }
     }
 
+    /** The three rotation axes of a bone snapshot. */
+    private enum Axis { X, Y, Z }
 
+    /**
+     * GeckoLib 5 stores only the animated delta in a snapshot, while the old GeoBone getters
+     * returned the absolute animated rotation. Point Blank itself reads a bone's animation the
+     * same way ({@code baseRotX() + snapshot.getRotX()}), so the constraint bone's authored
+     * per-axis fraction is read the same way here.
+     */
+    private static float constraintRotation(GeoBone bone, BoneSnapshot snapshot, Axis axis) {
+        float base = 0.0F;
+        if (bone != null) {
+            base = switch (axis) {
+                case X -> bone.baseRotX();
+                case Y -> bone.baseRotY();
+                case Z -> bone.baseRotZ();
+            };
+        }
+        float animated = switch (axis) {
+            case X -> snapshot.getRotX();
+            case Y -> snapshot.getRotY();
+            case Z -> snapshot.getRotZ();
+        };
+        return base + animated;
+    }
 
-    private static boolean cameraAuthoredSinceLastCorrection(GeoBone camera) {
+    private static boolean cameraAuthoredSinceLastCorrection(BoneSnapshot camera) {
         if (camera != correctedCamera) {
             return true;
         }
         return camera.getRotX() != correctedCameraRotX
                 || camera.getRotY() != correctedCameraRotY
                 || camera.getRotZ() != correctedCameraRotZ
-                || camera.getPosX() != correctedCameraPosX
-                || camera.getPosY() != correctedCameraPosY
-                || camera.getPosZ() != correctedCameraPosZ;
+                || camera.getTranslateX() != correctedCameraPosX
+                || camera.getTranslateY() != correctedCameraPosY
+                || camera.getTranslateZ() != correctedCameraPosZ;
     }
 
-    /** Remembers what the last camera correction left on the bone. */
-    private static void rememberCameraCorrection(GeoBone camera) {
+    /** Remembers what the last camera correction left on the snapshot. */
+    private static void rememberCameraCorrection(BoneSnapshot camera) {
         correctedCamera = camera;
         correctedCameraRotX = camera.getRotX();
         correctedCameraRotY = camera.getRotY();
         correctedCameraRotZ = camera.getRotZ();
-        correctedCameraPosX = camera.getPosX();
-        correctedCameraPosY = camera.getPosY();
-        correctedCameraPosZ = camera.getPosZ();
+        correctedCameraPosX = camera.getTranslateX();
+        correctedCameraPosY = camera.getTranslateY();
+        correctedCameraPosZ = camera.getTranslateZ();
     }
 
-
-    private static void applyCorrectiveTransform(GeoBone target,
+    private static void applyCorrectiveTransform(BoneSnapshot target,
             float rotRetX, float rotRetY, float rotRetZ,
             float posRetX, float posRetY, float posRetZ,
             double progress) {
@@ -243,45 +289,43 @@ public final class AdsConstraintManager {
         float beforeRotX = target.getRotX();
         float beforeRotY = target.getRotY();
         float beforeRotZ = target.getRotZ();
-        float beforePosX = target.getPosX();
-        float beforePosY = target.getPosY();
-        float beforePosZ = target.getPosZ();
+        float beforePosX = target.getTranslateX();
+        float beforePosY = target.getTranslateY();
+        float beforePosZ = target.getTranslateZ();
 
         if (!constrainRotation && !constrainPosition) {
             if (trace) {
                 LOGGER.debug("AdsConstraint '{}': SKIPPED (all retention=1). rot=({},{},{}) pos=({},{},{})",
-                        target.getName(), rotRetX, rotRetY, rotRetZ, posRetX, posRetY, posRetZ);
+                        target.getBone().name(), rotRetX, rotRetY, rotRetZ,
+                        posRetX, posRetY, posRetZ);
             }
             return;
         }
 
-        BoneSnapshot bind = target.getInitialSnapshot();
-
+        // In GeckoLib 5 a snapshot's values are already relative to the bone's bind
+        // transform, so the bind comparison value is 0 on every axis.
         if (constrainRotation) {
-            target.updateRotation(
-                    AdsConstraintMath.applyCorrection(target.getRotX(), bind.getRotX(), rotRetX, progress),
-                    AdsConstraintMath.applyCorrection(target.getRotY(), bind.getRotY(), rotRetY, progress),
-                    AdsConstraintMath.applyCorrection(target.getRotZ(), bind.getRotZ(), rotRetZ, progress));
+            target.setRotation(
+                    AdsConstraintMath.applyCorrection(target.getRotX(), 0.0F, rotRetX, progress),
+                    AdsConstraintMath.applyCorrection(target.getRotY(), 0.0F, rotRetY, progress),
+                    AdsConstraintMath.applyCorrection(target.getRotZ(), 0.0F, rotRetZ, progress));
         }
 
         if (constrainPosition) {
-            target.updatePosition(
-                    AdsConstraintMath.applyCorrection(target.getPosX(), bind.getOffsetX(), posRetX, progress),
-                    AdsConstraintMath.applyCorrection(target.getPosY(), bind.getOffsetY(), posRetY, progress),
-                    AdsConstraintMath.applyCorrection(target.getPosZ(), bind.getOffsetZ(), posRetZ, progress));
+            target.setTranslation(
+                    AdsConstraintMath.applyCorrection(target.getTranslateX(), 0.0F, posRetX, progress),
+                    AdsConstraintMath.applyCorrection(target.getTranslateY(), 0.0F, posRetY, progress),
+                    AdsConstraintMath.applyCorrection(target.getTranslateZ(), 0.0F, posRetZ, progress));
         }
 
         if (trace) {
             LOGGER.debug(
                     "AdsConstraint '{}': progress={} retention rot=({},{},{}) pos=({},{},{}) rot ({},{},{})->({},{},{}) pos ({},{},{})->({},{},{})",
-                    target.getName(), progress, rotRetX, rotRetY, rotRetZ, posRetX, posRetY, posRetZ,
+                    target.getBone().name(), progress, rotRetX, rotRetY, rotRetZ, posRetX, posRetY, posRetZ,
                     beforeRotX, beforeRotY, beforeRotZ, target.getRotX(), target.getRotY(), target.getRotZ(),
-                    beforePosX, beforePosY, beforePosZ, target.getPosX(), target.getPosY(), target.getPosZ());
+                    beforePosX, beforePosY, beforePosZ, target.getTranslateX(), target.getTranslateY(), target.getTranslateZ());
         }
-
-        target.resetStateChanges();
     }
-
 
     private static double resolveAimingProgress(GunClientState gunState) {
         GunStateListener aiming =
@@ -295,15 +339,15 @@ public final class AdsConstraintManager {
         return 0.0;
     }
 
-    private static void warnMissingBonesOnce(GunItem gun, GeoBone rootBone) {
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(gun);
+    private static void warnMissingBonesOnce(GunItem gun, boolean rootBonePresent) {
+        Identifier id = BuiltInRegistries.ITEM.getKey(gun);
         String key = id == null ? gun.getClass().getName() : id.toString();
         if (WARNED_WEAPONS.add(key)) {
             LOGGER.warn("AdsConstraint is enabled for '{}' but the model is missing the '{}' bone{}; "
                             + "the constraint is skipped for this weapon",
                     key,
-                    rootBone == null ? AdsConstraintConstants.ROOT_BONE : AdsConstraintConstants.CONSTRAINT_BONE,
-                    rootBone == null ? " (the weapon root)" : "");
+                    rootBonePresent ? AdsConstraintConstants.CONSTRAINT_BONE : AdsConstraintConstants.ROOT_BONE,
+                    rootBonePresent ? "" : " (the weapon root)");
         }
     }
 }

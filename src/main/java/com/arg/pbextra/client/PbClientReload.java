@@ -80,7 +80,7 @@ public final class PbClientReload {
                 .withStyle(problem ? ChatFormatting.RED : ChatFormatting.GRAY);
         LocalPlayer player = Minecraft.getInstance().player;
         if (player != null) {
-            player.displayClientMessage(component, false);
+            player.sendSystemMessage(component);
         } else {
             PointBlankExtraFeatures.LOGGER.info(message);
         }

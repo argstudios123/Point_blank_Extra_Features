@@ -47,7 +47,7 @@ public abstract class AdsReloadZoomControlMixin {
 
         // Same state lookup Point Blank itself performs inside onFovUpdate.
         GunClientState state = GunClientState.getState(
-                player, stack, player.getInventory().selected, false);
+                player, stack, player.getInventory().getSelectedSlot(), false);
         boolean reloading = state != null && state.isReloading();
 
         float progress = AdsReloadZoomTransition.progress(

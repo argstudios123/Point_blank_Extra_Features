@@ -136,8 +136,8 @@ dependencies {
     // coordinates to ./libs/<artifactId>-<version>.jar and fg.deobf() remaps
     // the SRG-named jars to the development (official) mappings so the mods'
     // own mixins work when running the client/server from the IDE.
-    implementation fg.deobf("curse.maven:vics-point-blank-961053:8855556")
-    implementation fg.deobf("curse.maven:geckolib-388172:8285794")
+    implementation "curse.maven:vics-point-blank-961053:8855569"
+    implementation "curse.maven:geckolib-388172:8893490"
     // Specify the version of Minecraft to use.
     // Any artifact can be supplied so long as it has a "userdev" classifier artifact and is a compatible patcher artifact.
     // The "userdev" classifier will be requested and setup by ForgeGradle.

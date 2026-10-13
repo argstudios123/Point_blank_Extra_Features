@@ -1,120 +1,46 @@
 package com.arg.pbextra.mixin;
 
-import com.arg.pbextra.config.PointBlankExtraConfig;
-import com.arg.pbextra.data.WeaponExtraDataManager;
+import com.arg.pbextra.client.ToggleAimingController;
 import com.vicmatskiv.pointblank.client.ClientEventHandler;
-import com.vicmatskiv.pointblank.item.GunItem;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 
+/**
+ * Feeds the {@link ToggleAimingController} state machine into Point Blank's per-tick
+ * right-mouse state.
+ *
+ * <p>All of the toggle logic lives in {@link ToggleAimingController}; this class is only
+ * the injection point. Point Blank computes the right-mouse state once per client tick in
+ * {@code ClientEventHandler#onClientTick} and immediately uses it for the ADS
+ * press/release edge detection and for {@code syncSingleGunAiming}. Replacing that single
+ * value therefore makes Point Blank treat an active toggle exactly like a held button,
+ * while leaving every other weapon, all guards and all native ADS transitions untouched.</p>
+ *
+ * <p>Vic's Point Blank 2.2.0 for NeoForge 26.1.2 stores that boolean in local variable
+ * slot 14 of {@code onClientTick}, assigned straight from
+ * {@code isMouseButtonDown(mc, mc.options.keyUse.isDown(), 1)}. The slot can be
+ * re-verified with {@code javap -p -c -l} on the Point Blank jar: the
+ * {@code LocalVariableTable} of {@code onClientTick} names slot 14
+ * {@code rightMouseButtonDown} and slot 20 is the unrelated
+ * {@code queuedVanillaToGunDraw} flag (that slot belonged to the right-mouse boolean in
+ * the 1.21.1 build). Targeting a slot that does not exist is a hard injection failure, but
+ * a wrong slot holding another boolean fails silently, so re-check the table whenever the
+ * dependency is updated.</p>
+ */
 @Mixin(value = ClientEventHandler.class, remap = false)
 public abstract class ClientEventHandlerMixin {
 
-    @Unique
-    private boolean pointblankextra$toggleState;
-
-    @Unique
-    private boolean pointblankextra$previousPhysicalState;
-
-    @Unique
-    private int pointblankextra$lastGunSlot = Integer.MIN_VALUE;
-
-    @Unique
-    private ItemStack pointblankextra$lastGunStack = ItemStack.EMPTY;
-
-    /**
-     * VPB 2.2.0 for NeoForge 1.21.1 stores the right-mouse physical state in
-     * local variable slot 20 of {@code onClientTick} (slot 17 on Forge 1.20.1).
-     * We replace that value with our toggle state.
-     */
     @ModifyVariable(
             method = "onClientTick",
             at = @At("STORE"),
-            index = 20,
+            index = 14,
             remap = false
     )
-    private boolean pointblankextra$modifyRightMouseState(boolean physicalState) {
-
-        Minecraft minecraft = Minecraft.getInstance();
-
-        // The config itself is the master switch for this mod's functionality.
-        if (!PointBlankExtraConfig.ENABLE_MOD.get()) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        LocalPlayer player = minecraft.player;
-
-        if (player == null) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        // VPB uses RMB for firing when both gun slots are occupied.
-        // Leave that special case completely under VPB's control.
-        if (GunItem.hasGunsInMainAndAltSlots(player)) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        GunItem.OperableGunContext context =
-                GunItem.resolveMainHandGunContext(player);
-
-        // No main-hand VPB gun: don't alter normal Minecraft input.
-        if (context == null || context.itemStack().isEmpty()) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        ItemStack stack = context.itemStack();
-
-        if (!(stack.getItem() instanceof GunItem gun) || !gun.isAimingEnabled()) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        // Per-weapon toggle aiming (JSON: "toggle_aiming": true).
-        if (!WeaponExtraDataManager.isToggleAiming(stack)) {
-            pointblankextra$reset(physicalState);
-            return physicalState;
-        }
-
-        // Switching guns/slots starts a fresh toggle state.
-        int slot = context.slotIndex();
-        if (slot != pointblankextra$lastGunSlot
-                || pointblankextra$lastGunStack.isEmpty()
-                || pointblankextra$lastGunStack.getItem() != stack.getItem()) {
-            pointblankextra$lastGunSlot = slot;
-            pointblankextra$lastGunStack = stack.copy();
-            pointblankextra$toggleState = false;
-            pointblankextra$previousPhysicalState = physicalState;
-        }
-
-        // Detect a real physical RMB press: UP -> DOWN.
-        boolean justPressed =
-                physicalState && !pointblankextra$previousPhysicalState;
-
-        pointblankextra$previousPhysicalState = physicalState;
-
-        if (justPressed) {
-            pointblankextra$toggleState = !pointblankextra$toggleState;
-        }
-
-        // This is the value VPB uses for its own press/release detection.
-        return pointblankextra$toggleState;
-    }
-
-    @Unique
-    private void pointblankextra$reset(boolean physicalState) {
-        pointblankextra$toggleState = false;
-        pointblankextra$previousPhysicalState = physicalState;
-        pointblankextra$lastGunSlot = Integer.MIN_VALUE;
-        pointblankextra$lastGunStack = ItemStack.EMPTY;
+    private boolean pointblankextra$applyToggleAiming(boolean physicalState) {
+        return ToggleAimingController.resolveRightMouseState(
+                Minecraft.getInstance().player, physicalState);
     }
 }

@@ -13,6 +13,7 @@ import net.neoforged.fml.event.config.ModConfigEvent;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 
@@ -67,6 +68,20 @@ public final class ClientEvents {
                 MeleeInputHandler.onMeleeKeyPressed(minecraft);
             }
             MeleeAnimationHandler.tick();
+        }
+
+        @SubscribeEvent
+        public static void onClientLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+            // Never carry a toggle or a switch blend from one session into the next.
+            ToggleAimingController.onDisconnect();
+            AdsSwitchBlend.reset();
+        }
+
+        @SubscribeEvent
+        public static void onClientPlayerClone(ClientPlayerNetworkEvent.Clone event) {
+            // Respawn and dimension changes replace the player: release the ADS as well.
+            ToggleAimingController.onPlayerReplaced();
+            AdsSwitchBlend.reset();
         }
     }
 }

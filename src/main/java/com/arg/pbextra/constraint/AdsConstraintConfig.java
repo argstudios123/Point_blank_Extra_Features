@@ -23,7 +23,7 @@ public final class AdsConstraintConfig {
     private final boolean camera;
     private final float cameraConstraint;
 
-    /** Backwards-compatible constructor; no explicit camera constraint is configured. */
+    /** Backwards-compatible constructor if no explicit camera constraint is configured. */
     public AdsConstraintConfig(boolean enabled, boolean camera) {
         this(enabled, camera, UNSPECIFIED);
     }

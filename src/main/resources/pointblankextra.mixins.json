@@ -16,6 +16,8 @@
   ],
   "mixins": [
     "GunItemMeleeControllerMixin",
+    "GunItemInfiniteMagazineMixin",
+    "CommonEventHandlerInfiniteRefundMixin",
     "SoundFeatureAccessor",
     "SoundFeatureRandomFireSoundMixin",
     "FeatureConditionJsonMixin",

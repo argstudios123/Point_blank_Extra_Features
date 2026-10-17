@@ -26,12 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Point Blank 26.1.2 renders through GeckoLib 5, where a bone's animation result for one
- * frame is a {@link BoneSnapshot} rather than a mutable {@link GeoBone}. The constraint is
- * therefore applied to the snapshots of the weapon root ("main") and of the "_camera_" bone
- * right before Point Blank reads the camera bone, which keeps the original behaviour intact.
- */
+
 public final class AdsConstraintManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();

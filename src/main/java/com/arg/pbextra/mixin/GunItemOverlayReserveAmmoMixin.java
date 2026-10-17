@@ -29,7 +29,8 @@ public abstract class GunItemOverlayReserveAmmoMixin {
     )
     private static int pointblankextra$reserveForCustomAmmoUi(GunItem gun, ItemStack gunStack,
                                                               FireModeInstance fireMode) {
-        return pointblankextra$reserveValue(gun, gunStack, fireMode);
+        // A custom ammo UI formats its capacity text on its own, so it keeps the reserve.
+        return pointblankextra$reserveValue(gun, gunStack, fireMode, false);
     }
 
 
@@ -49,18 +50,29 @@ public abstract class GunItemOverlayReserveAmmoMixin {
     )
     private static int pointblankextra$reserveForDefaultCounter(GunItem gun, ItemStack gunStack,
                                                                 FireModeInstance fireMode) {
-        return pointblankextra$reserveValue(gun, gunStack, fireMode);
+        return pointblankextra$reserveValue(gun, gunStack, fireMode, true);
     }
 
 
     @Unique
     private static int pointblankextra$reserveValue(GunItem gun, ItemStack gunStack,
-                                                    FireModeInstance fireMode) {
+                                                    FireModeInstance fireMode,
+                                                    boolean keepInfiniteCapacity) {
         int magazineCapacity = gun.getMaxAmmoCapacity(gunStack, fireMode);
         if (!PointBlankExtraConfig.ENABLE_MOD.get()
                 || !PointBlankExtraConfig.ENABLE_RESERVE_AMMO_COUNTER.get()) {
             return magazineCapacity;
         }
+
+        if (keepInfiniteCapacity && magazineCapacity == GunItem.INFINITE_AMMO) {
+            // Point Blank's default HUD builds the text as "ammo/capacity" and shows its
+            // infinite indicator when the capacity is the infinite sentinel. It decides that
+            // on the value returned here, so replacing it with the reserve would defeat the
+            // check and print the raw infinite ammo count instead. Weapons with an infinite
+            // capacity therefore keep Point Blank's own indicator.
+            return magazineCapacity;
+        }
+
         return ReserveAmmoCounter.reserveForDisplay(gun, gunStack, fireMode, magazineCapacity);
     }
 }

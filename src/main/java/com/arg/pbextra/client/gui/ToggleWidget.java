@@ -11,8 +11,6 @@ import java.util.function.Supplier;
 
 public final class ToggleWidget extends FlatButton {
 
-    private static final int ON_COLOR = 0xFF7CE07C;
-    private static final int OFF_COLOR = 0xFF9A9A9A;
     private static final Component ON_TEXT = Component.literal("ON");
     private static final Component OFF_TEXT = Component.literal("OFF");
 
@@ -41,11 +39,9 @@ public final class ToggleWidget extends FlatButton {
         super.extractContents(graphics, mouseX, mouseY, partialTick);
         // The base class already drew the label at the left; keep the state on
         // the right so long labels never collide with it.
-        if (value) {
-            graphics.text(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, ON_COLOR, false);
-        } else {
-            graphics.text(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, OFF_COLOR, false);
-        }
+        UiEditorTheme.Palette palette = UiEditorTheme.active().palette();
+        int color = value ? palette.success() : palette.hint();
+        graphics.text(font, message, getX() + getWidth() - 3 - font.width(message), getY() + 2, color, false);
     }
 
     @Override

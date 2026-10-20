@@ -83,6 +83,30 @@ public final class UiPreviewLayout {
         return model.height();
     }
 
+    /**
+     * +1 when increasing paddingX moves the HUD right (padding on the left),
+     * -1 when it moves the HUD left (padding on the right).
+     */
+    public int paddingXSign() {
+        String location = location();
+        boolean leftPadding = location.equals("BOTTOM_LEFT") || location.equals("TOP_LEFT")
+                || location.equals("RIGHT_OF_HOTBAR");
+        int sign = leftPadding ? 1 : -1;
+        if (model.kind() == UiDefinitionKind.AMMO && mirrored()) {
+            sign = -sign;
+        }
+        return sign;
+    }
+
+    /**
+     * +1 when increasing paddingY moves the HUD down (padding on the top),
+     * -1 when it moves the HUD up (padding on the bottom).
+     */
+    public int paddingYSign() {
+        String location = location();
+        return location.equals("TOP_LEFT") || location.equals("TOP_RIGHT") ? 1 : -1;
+    }
+
 
     public boolean mirrored() {
         if (model.kind() == UiDefinitionKind.AMMO) {
@@ -260,9 +284,50 @@ public final class UiPreviewLayout {
             return null;
         }
         String value = raw.trim();
-        if (value.contains(":")) {
-            return Identifier.tryParse(value);
+        String namespace = "pointblank";
+        String path = value;
+        int colon = value.indexOf(':');
+        if (colon >= 0) {
+            namespace = value.substring(0, colon);
+            path = value.substring(colon + 1);
         }
-        return Identifier.tryParse("pointblank:" + value);
+        if (namespace.isEmpty()) {
+            namespace = "minecraft";
+        }
+        // Identifier itself accepts empty path segments (and "."), but the resource
+        // manager resolves them as filesystem paths and throws on them. Validate the
+        // path here so an incomplete path that is still being typed can never reach
+        // a resource lookup and crash the preview.
+        if (!isValidResourcePath(path) || !Identifier.isValidNamespace(namespace)) {
+            return null;
+        }
+        return Identifier.tryBuild(namespace, path);
+    }
+
+    private static boolean isValidResourcePath(String path) {
+        if (path.isEmpty() || path.indexOf(':') >= 0) {
+            return false;
+        }
+        int start = 0;
+        for (int index = 0; index <= path.length(); index++) {
+            if (index < path.length() && path.charAt(index) != '/') {
+                if (!Identifier.validPathChar(path.charAt(index))) {
+                    return false;
+                }
+                continue;
+            }
+            int length = index - start;
+            if (length == 0) {
+                return false;
+            }
+            if (length == 1 && path.charAt(start) == '.') {
+                return false;
+            }
+            if (length == 2 && path.charAt(start) == '.' && path.charAt(start + 1) == '.') {
+                return false;
+            }
+            start = index + 1;
+        }
+        return true;
     }
 }

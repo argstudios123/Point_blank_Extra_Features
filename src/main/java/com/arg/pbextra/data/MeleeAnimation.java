@@ -51,7 +51,8 @@ public final class MeleeAnimation {
 
         if (duration > 0 && preMeleeMillis > duration) {
             LOGGER.warn("Melee animation '{}' has preMelee={} ms beyond its duration={} ms, "
-                    + "so the hit would never be reached", name, preMeleeMillis, duration);
+                            + "so the hit will land after the animation has finished",
+                    name, preMeleeMillis, duration);
         }
 
         return new MeleeAnimation(name, duration, preMeleeMillis);

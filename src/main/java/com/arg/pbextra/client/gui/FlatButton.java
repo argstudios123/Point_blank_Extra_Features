@@ -10,23 +10,18 @@ import net.minecraft.client.gui.Font;
 
 public class FlatButton extends AbstractButton {
 
-    private static final int BORDER_COLOR = 0xFF505860;
-    private static final int BORDER_COLOR_HOVERED = 0xFFB0C0D0;
-    private static final int BORDER_COLOR_DISABLED = 0xFF383838;
-    private static final int FILL_COLOR = 0xFF262B30;
-    private static final int FILL_COLOR_HOVERED = 0xFF3A4249;
-    private static final int FILL_COLOR_DISABLED = 0xFF1A1D20;
     public static final int DEFAULT_TEXT_COLOR = 0xFFE0E0E0;
 
     private final Font font;
     private final Runnable action;
-    private int textColor = DEFAULT_TEXT_COLOR;
+    private int textColor;
     private int leftPadding = 3;
 
     public FlatButton(Font font, int width, int height, String label, Runnable action) {
         super(0, 0, width, height, Component.literal(label == null ? "" : label));
         this.font = font;
         this.action = action;
+        this.textColor = UiEditorTheme.active().palette().buttonText();
     }
 
     public FlatButton textColor(int color) {
@@ -48,14 +43,18 @@ public class FlatButton extends AbstractButton {
 
     @Override
     protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        UiEditorTheme.Palette palette = UiEditorTheme.active().palette();
         boolean hovered = active && isHoveredOrFocused();
-        int border = !active ? BORDER_COLOR_DISABLED : hovered ? BORDER_COLOR_HOVERED : BORDER_COLOR;
-        int fill = !active ? FILL_COLOR_DISABLED : hovered ? FILL_COLOR_HOVERED : FILL_COLOR;
+        int border = !active ? palette.buttonBorderDisabled()
+                : hovered ? palette.buttonBorderHovered() : palette.buttonBorder();
+        int fill = !active ? palette.buttonFillDisabled()
+                : hovered ? palette.buttonFillHovered() : palette.buttonFill();
         graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), border);
         graphics.fill(getX() + 1, getY() + 1, getX() + getWidth() - 1, getY() + getHeight() - 1, fill);
         if (getMessage() != null) {
             graphics.text(font, getMessage(), getX() + leftPadding,
-                    getY() + (getHeight() - 8) / 2 + 1, active ? textColor : 0xFF808080, false);
+                    getY() + (getHeight() - 8) / 2 + 1,
+                    active ? textColor : palette.buttonTextDisabled(), false);
         }
     }
 

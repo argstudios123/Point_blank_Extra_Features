@@ -1,0 +1,39 @@
+{
+  "bullet_holes.default": {
+    "sounds": [
+      "pointblankextra:bullet_holes/impact_default/impact_default_1",
+      "pointblankextra:bullet_holes/impact_default/impact_default_2",
+      "pointblankextra:bullet_holes/impact_default/impact_default_3",
+      "pointblankextra:bullet_holes/impact_default/impact_default_4",
+      "pointblankextra:bullet_holes/impact_default/impact_default_5"
+    ]
+  },
+  "bullet_holes.wood": {
+    "sounds": [
+      "pointblankextra:bullet_holes/wood_impact_default/wood_impact_default_1",
+      "pointblankextra:bullet_holes/wood_impact_default/wood_impact_default_2"
+    ]
+  },
+  "bullet_holes.glass": {
+    "sounds": [
+      "pointblankextra:bullet_holes/glass_impact_default/glass_impact_default_1",
+      "pointblankextra:bullet_holes/glass_impact_default/glass_impact_default_2",
+      "pointblankextra:bullet_holes/glass_impact_default/glass_impact_default_3"
+    ]
+  },
+  "bullet_holes.dirt": {
+    "sounds": [
+      "pointblankextra:bullet_holes/dirt_impact_default/dirt_impact_default_1",
+      "pointblankextra:bullet_holes/dirt_impact_default/dirt_impact_default_2",
+      "pointblankextra:bullet_holes/dirt_impact_default/dirt_impact_default_3"
+    ]
+  },
+  "bullet_holes.metal": {
+    "sounds": [
+      "pointblankextra:bullet_holes/metal_impact_default/metal_impact_default_1",
+      "pointblankextra:bullet_holes/metal_impact_default/metal_impact_default_2",
+      "pointblankextra:bullet_holes/metal_impact_default/metal_impact_default_3",
+      "pointblankextra:bullet_holes/metal_impact_default/metal_impact_default_4"
+    ]
+  }
+}

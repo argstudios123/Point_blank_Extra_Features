@@ -31,6 +31,25 @@ public final class UiPreviewRenderer {
     private static final int GHOST_OUTLINE = 0x99FF9955;
     private static final int GUIDE_TEXT = 0xFFB8C4D0;
     private static final int LABEL_BACKGROUND = 0xA0000000;
+    // Screen-space positioning handles (sizes are in GUI pixels, not preview pixels).
+    private static final int HANDLE_SIZE = 6;
+    private static final int HANDLE_OFFSET = 8;
+    private static final int HANDLE_COLOR = 0xC0E0E0E0;
+    private static final int HANDLE_BORDER = 0xFF101014;
+    // HUD padding / resize handles (screen-space, outside the green rectangle).
+    private static final int HUD_HANDLE_GAP = 8;
+    private static final int HUD_HANDLE_HIT = 12;
+    private static final int HUD_PADDING_COLOR = 0xFFFFB000;
+    private static final int HUD_PADDING_BORDER = 0xFF3A2400;
+    private static final int HUD_RESIZE_COLOR = 0xFF7CE07C;
+    private static final int HUD_RESIZE_FILL = 0xE0101010;
+
+    /** Screen-space rectangle of one HUD padding/resize handle. */
+    public record HudHandle(int x, int y, int width, int height) {
+        public boolean contains(double mouseX, double mouseY) {
+            return mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height;
+        }
+    }
 
     private static boolean maskedProgressUnavailable;
 
@@ -66,6 +85,10 @@ public final class UiPreviewRenderer {
 
         graphics.pose().popMatrix();
 
+        if (showGuides) {
+            drawHandles(graphics, font, layout, viewport, selectedKey);
+            drawHudHandles(graphics, font, layout, viewport);
+        }
         graphics.outline(canvasLeft, canvasTop, canvasRight - canvasLeft,
                 canvasBottom - canvasTop, CANVAS_BORDER);
         drawCornerLabels(graphics, font, layout, canvasLeft, canvasTop, canvasBottom, selectedKey);
@@ -137,6 +160,9 @@ public final class UiPreviewRenderer {
     private static void drawMaskedProgress(GuiGraphicsExtractor graphics, Identifier progress,
                                            Identifier mask, float ratio, float x, float y,
                                            int width, int height, boolean mirrored) {
+        if (!available(progress)) {
+            return;
+        }
         // Point Blank 26.1.2 removed its masked heat-progress blit helper together with the
         // legacy GUI pipeline, so the editor preview always draws the progress texture clipped
         // to the filled fraction of the bar (the fallback this method already used).
@@ -146,8 +172,17 @@ public final class UiPreviewRenderer {
     }
 
     private static boolean available(Identifier texture) {
-        return texture != null
-                && Minecraft.getInstance().getResourceManager().getResource(texture).isPresent();
+        if (texture == null) {
+            return false;
+        }
+        try {
+            return Minecraft.getInstance().getResourceManager().getResource(texture).isPresent();
+        } catch (RuntimeException exception) {
+            // An incomplete texture path (for example one with an empty directory
+            // while the user is typing) can make the pack resource lookup throw.
+            // The preview treats it as missing and keeps drawing the placeholder.
+            return false;
+        }
     }
 
 
@@ -204,6 +239,135 @@ public final class UiPreviewRenderer {
                     Math.max(1.0F, placed.width()) + 2.0F,
                     Math.max(1.0F, placed.height()) + 2.0F, color, 1.0F);
         }
+    }
+
+    private static void drawHandles(GuiGraphicsExtractor graphics, Font font, UiPreviewLayout layout,
+                                    UiPreviewViewport viewport, String selectedKey) {
+        for (UiPreviewLayout.Placed placed : layout.placed(font)) {
+            if (!isPositionable(placed)) {
+                continue;
+            }
+            int x = handleX(placed, viewport);
+            int y = handleY(placed, viewport);
+            boolean selected = placed.key().equals(selectedKey);
+            graphics.fill(x, y, x + HANDLE_SIZE, y + HANDLE_SIZE, HANDLE_BORDER);
+            graphics.fill(x + 1, y + 1, x + HANDLE_SIZE - 1, y + HANDLE_SIZE - 1,
+                    selected ? SELECTED_OUTLINE : HANDLE_COLOR);
+        }
+    }
+
+    /** True when the screen-space positioning handle of {@code placed} contains the mouse. */
+    public static boolean handleHit(UiPreviewLayout.Placed placed, UiPreviewViewport viewport,
+                                    double mouseX, double mouseY) {
+        int x = handleX(placed, viewport);
+        int y = handleY(placed, viewport);
+        return mouseX >= x && mouseX < x + HANDLE_SIZE && mouseY >= y && mouseY < y + HANDLE_SIZE;
+    }
+
+    private static boolean isPositionable(UiPreviewLayout.Placed placed) {
+        UiTextBlock block = placed.block();
+        return block != null && block.present()
+                && block.supports(TextField.X) && block.supports(TextField.Y);
+    }
+
+    private static int handleX(UiPreviewLayout.Placed placed, UiPreviewViewport viewport) {
+        return Math.round(viewport.toScreenX(placed.x())) - HANDLE_OFFSET;
+    }
+
+    private static int handleY(UiPreviewLayout.Placed placed, UiPreviewViewport viewport) {
+        return Math.round(viewport.toScreenY(placed.y())) - HANDLE_OFFSET;
+    }
+
+    public static HudHandle paddingXHandle(UiPreviewLayout layout, UiPreviewViewport viewport) {
+        float[] origin = layout.topLeft();
+        boolean left = layout.paddingXSign() > 0;
+        float edgeX = left ? origin[0] : origin[0] + layout.uiWidth();
+        int centerX = clampHandleX(layout, viewport,
+                Math.round(viewport.toScreenX(edgeX)) + (left ? -HUD_HANDLE_GAP : HUD_HANDLE_GAP));
+        int centerY = clampHandleY(layout, viewport,
+                Math.round(viewport.toScreenY(origin[1] + layout.uiHeight() / 2.0F)));
+        return centeredHandle(centerX, centerY);
+    }
+
+    public static HudHandle paddingYHandle(UiPreviewLayout layout, UiPreviewViewport viewport) {
+        float[] origin = layout.topLeft();
+        boolean top = layout.paddingYSign() > 0;
+        float edgeY = top ? origin[1] : origin[1] + layout.uiHeight();
+        int centerX = clampHandleX(layout, viewport,
+                Math.round(viewport.toScreenX(origin[0] + layout.uiWidth() / 2.0F)));
+        int centerY = clampHandleY(layout, viewport,
+                Math.round(viewport.toScreenY(edgeY)) + (top ? -HUD_HANDLE_GAP : HUD_HANDLE_GAP));
+        return centeredHandle(centerX, centerY);
+    }
+
+    public static HudHandle widthHandle(UiPreviewLayout layout, UiPreviewViewport viewport) {
+        float[] origin = layout.topLeft();
+        boolean freeRight = layout.paddingXSign() > 0;
+        float edgeX = freeRight ? origin[0] + layout.uiWidth() : origin[0];
+        int centerX = clampHandleX(layout, viewport,
+                Math.round(viewport.toScreenX(edgeX)) + (freeRight ? HUD_HANDLE_GAP : -HUD_HANDLE_GAP));
+        int centerY = clampHandleY(layout, viewport,
+                Math.round(viewport.toScreenY(origin[1] + layout.uiHeight() / 2.0F)));
+        return centeredHandle(centerX, centerY);
+    }
+
+    public static HudHandle heightHandle(UiPreviewLayout layout, UiPreviewViewport viewport) {
+        float[] origin = layout.topLeft();
+        boolean freeBottom = layout.paddingYSign() > 0;
+        float edgeY = freeBottom ? origin[1] + layout.uiHeight() : origin[1];
+        int centerX = clampHandleX(layout, viewport,
+                Math.round(viewport.toScreenX(origin[0] + layout.uiWidth() / 2.0F)));
+        int centerY = clampHandleY(layout, viewport,
+                Math.round(viewport.toScreenY(edgeY)) + (freeBottom ? HUD_HANDLE_GAP : -HUD_HANDLE_GAP));
+        return centeredHandle(centerX, centerY);
+    }
+
+    private static int clampHandleX(UiPreviewLayout layout, UiPreviewViewport viewport, int centerX) {
+        int min = Math.round(viewport.toScreenX(0)) + HUD_HANDLE_HIT / 2;
+        int max = Math.round(viewport.toScreenX(layout.screenWidth())) - HUD_HANDLE_HIT / 2;
+        return Math.max(min, Math.min(max, centerX));
+    }
+
+    private static int clampHandleY(UiPreviewLayout layout, UiPreviewViewport viewport, int centerY) {
+        int min = Math.round(viewport.toScreenY(0)) + HUD_HANDLE_HIT / 2;
+        int max = Math.round(viewport.toScreenY(layout.screenHeight())) - HUD_HANDLE_HIT / 2;
+        return Math.max(min, Math.min(max, centerY));
+    }
+
+    private static HudHandle centeredHandle(int centerX, int centerY) {
+        return new HudHandle(centerX - HUD_HANDLE_HIT / 2, centerY - HUD_HANDLE_HIT / 2,
+                HUD_HANDLE_HIT, HUD_HANDLE_HIT);
+    }
+
+    private static void drawHudHandles(GuiGraphicsExtractor graphics, Font font,
+                                       UiPreviewLayout layout, UiPreviewViewport viewport) {
+        HudHandle paddingX = paddingXHandle(layout, viewport);
+        graphics.fill(paddingX.x() + 4, paddingX.y(), paddingX.x() + 8,
+                paddingX.y() + paddingX.height(), HUD_PADDING_BORDER);
+        graphics.fill(paddingX.x() + 5, paddingX.y() + 1, paddingX.x() + 7,
+                paddingX.y() + paddingX.height() - 1, HUD_PADDING_COLOR);
+
+        HudHandle paddingY = paddingYHandle(layout, viewport);
+        graphics.fill(paddingY.x(), paddingY.y() + 4, paddingY.x() + paddingY.width(),
+                paddingY.y() + 8, HUD_PADDING_BORDER);
+        graphics.fill(paddingY.x() + 1, paddingY.y() + 5, paddingY.x() + paddingY.width() - 1,
+                paddingY.y() + 7, HUD_PADDING_COLOR);
+
+        drawHudResizeHandle(graphics, font, widthHandle(layout, viewport),
+                layout.paddingXSign() > 0 ? ">" : "<");
+        drawHudResizeHandle(graphics, font, heightHandle(layout, viewport),
+                layout.paddingYSign() > 0 ? "v" : "^");
+    }
+
+    private static void drawHudResizeHandle(GuiGraphicsExtractor graphics, Font font,
+                                            HudHandle handle, String arrow) {
+        graphics.fill(handle.x(), handle.y(), handle.x() + handle.width(),
+                handle.y() + handle.height(), HUD_RESIZE_FILL);
+        outline(graphics, handle.x(), handle.y(), handle.width(), handle.height(),
+                HUD_RESIZE_COLOR, 1.0F);
+        int textX = handle.x() + (handle.width() - font.width(arrow)) / 2;
+        int textY = handle.y() + (handle.height() - 8) / 2 + 1;
+        graphics.text(font, arrow, textX, textY, HUD_RESIZE_COLOR, false);
     }
 
     private static void checkerboard(GuiGraphicsExtractor graphics, float x, float y, int width, int height) {

@@ -19,8 +19,6 @@ public final class UiColorPicker {
     private static final int BAR_LEFT = 24;
     private static final int BAR_RIGHT = 152;
     private static final int BARS_TOP = 20;
-    private static final int BACKGROUND_COLOR = 0xF0181C20;
-    private static final int BORDER_COLOR = 0xFFB0C0D0;
     private static final String[] CHANNEL_NAMES = {"A", "R", "G", "B"};
 
     private boolean open;
@@ -138,11 +136,12 @@ public final class UiColorPicker {
         if (!open) {
             return;
         }
+        UiEditorTheme.Palette palette = UiEditorTheme.active().palette();
         int right = left + WIDTH;
         int bottom = top + HEIGHT;
-        graphics.fill(left, top, right, bottom, BACKGROUND_COLOR);
-        graphics.outline(left, top, WIDTH, HEIGHT, BORDER_COLOR);
-        graphics.text(font, title, left + 6, top + 6, 0xFFFFD24D, false);
+        graphics.fill(left, top, right, bottom, palette.dialogBackground());
+        graphics.outline(left, top, WIDTH, HEIGHT, palette.buttonBorderHovered());
+        graphics.text(font, title, left + 6, top + 6, palette.dialogTitle(), false);
 
         for (int index = 0; index < CHANNELS; index++) {
             int barTop = top + BARS_TOP + index * (BAR_HEIGHT + BAR_SPACING);
@@ -160,24 +159,25 @@ public final class UiColorPicker {
             }
         }
         graphics.fill(previewLeft + 1, previewTop + 1, previewRight - 1, previewBottom - 1, color());
-        graphics.outline(previewLeft, previewTop, 40, 12, 0xFF303030);
-        graphics.text(font, UiColors.format(color()), previewLeft + 46, previewTop + 2, 0xFFFFFFFF, false);
-        graphics.text(font, "Esc or click outside to close", left + 6, previewTop + 16, 0xFF909090, false);
+        graphics.outline(previewLeft, previewTop, 40, 12, palette.buttonBorder());
+        graphics.text(font, UiColors.format(color()), previewLeft + 46, previewTop + 2, palette.title(), false);
+        graphics.text(font, "Esc or click outside to close", left + 6, previewTop + 16, palette.hint(), false);
     }
 
     private void renderBar(GuiGraphicsExtractor graphics, Font font, int index, int barTop) {
+        UiEditorTheme.Palette palette = UiEditorTheme.active().palette();
         int barLeft = left + BAR_LEFT;
         int barRight = left + BAR_RIGHT;
-        graphics.text(font, CHANNEL_NAMES[index], left + 10, barTop + 1, 0xFFE0E0E0, false);
+        graphics.text(font, CHANNEL_NAMES[index], left + 10, barTop + 1, palette.buttonText(), false);
 
         int slices = barRight - barLeft;
         for (int slice = 0; slice < slices; slice++) {
             int value = (int) Math.round(slice / (double) (slices - 1) * 255.0D);
             graphics.fill(barLeft + slice, barTop, barLeft + slice + 1, barTop + BAR_HEIGHT, withChannel(index, value));
         }
-        graphics.outline(barLeft - 1, barTop - 1, barRight - barLeft + 2, BAR_HEIGHT + 2, 0xFF303030);
+        graphics.outline(barLeft - 1, barTop - 1, barRight - barLeft + 2, BAR_HEIGHT + 2, palette.buttonBorder());
         int knob = barLeft + Math.round(channel(index) / 255.0f * (barRight - barLeft - 1));
-        graphics.fill(knob, barTop - 1, knob + 1, barTop + BAR_HEIGHT + 1, 0xFFFFFFFF);
-        graphics.text(font, Integer.toString(channel(index)), barRight + 4, barTop + 1, 0xFFE0E0E0, false);
+        graphics.fill(knob, barTop - 1, knob + 1, barTop + BAR_HEIGHT + 1, palette.title());
+        graphics.text(font, Integer.toString(channel(index)), barRight + 4, barTop + 1, palette.buttonText(), false);
     }
 }

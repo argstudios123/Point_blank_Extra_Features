@@ -1,7 +1,9 @@
 package com.arg.pbextra.data;
 
 import com.arg.pbextra.ammo.ReserveAmmoCounter;
+import com.arg.pbextra.animation.AnimationLibraryRegistry;
 import com.arg.pbextra.constraint.AdsConstraintConfig;
+import com.arg.pbextra.crosshair.CustomCrosshairConfig;
 import com.arg.pbextra.integration.PointBlankJsonIntegration;
 import com.mojang.logging.LogUtils;
 import net.minecraft.resources.Identifier;
@@ -83,6 +85,10 @@ public final class WeaponExtraDataManager {
             loaded = true;
         }
         invalidateClientCaches();
+        commitAnimationLibraries(next, resourceManager != null);
+        if (FMLEnvironment.getDist() == Dist.CLIENT) {
+            AnimationLibraryRegistry.validate(resourceManager);
+        }
         logIndexed(next);
         if (!failures.isEmpty()) {
             LOGGER.warn("Point Blank Extra Features indexed {} weapon definition(s) with {} problem(s)",
@@ -112,9 +118,27 @@ public final class WeaponExtraDataManager {
         }
     }
 
+    /** Rebuilds the reusable animation library index from the freshly scanned data. */
+    private static void commitAnimationLibraries(Map<String, WeaponExtraData> data, boolean replace) {
+        Map<String, AnimationLibraryRegistry.WeaponLibraries> libraries = new HashMap<>();
+        data.forEach((name, extra) -> {
+            List<String> additional = extra.getAdditionalFirstPersonFallbacks();
+            List<String> declared = extra.getDeclaredFirstPersonFallbacks();
+            if (!additional.isEmpty() || !declared.isEmpty()) {
+                libraries.put(name,
+                        new AnimationLibraryRegistry.WeaponLibraries(additional, declared));
+            }
+        });
+        AnimationLibraryRegistry.commit(libraries, replace);
+    }
+
     private static void logIndexed(Map<String, WeaponExtraData> data) {
         LOGGER.debug("Point Blank Extra Features indexed {} weapon definition(s)", data.size());
         data.forEach((name, extra) -> {
+            if (!extra.getDeclaredFirstPersonFallbacks().isEmpty()) {
+                LOGGER.debug("Point Blank Extra Features: first-person animation fallbacks for '{}': {}",
+                        name, extra.getDeclaredFirstPersonFallbacks());
+            }
             if (extra.getAdsConstraint().isEnabled()) {
                 LOGGER.info("Point Blank Extra Features: adsConstraint enabled for '{}' (camera={})",
                         name, extra.getAdsConstraint().isCamera());
@@ -135,8 +159,10 @@ public final class WeaponExtraDataManager {
             return "disabled";
         }
         return String.format(Locale.ROOT,
-                "enabled[damage=%.1f, cooldown=%d, reach=%.1f, %s=%s, animations=%s]",
+                "enabled[damage=%.1f, cooldown=%d, reach=%.1f, knockback=%.1f, "
+                        + "angleRange=%.1f, %s=%s, animations=%s]",
                 melee.getDamage(), melee.getCooldownTicks(), melee.getReach(),
+                melee.getKnockback(), melee.getAngleRange(),
                 MeleeConfig.DAMAGE_CATS_AND_OCELOTS_KEY, melee.isDamageCatsAndOcelots(),
                 melee.getAnimations());
     }
@@ -210,6 +236,11 @@ public final class WeaponExtraDataManager {
     /** The ADS reload zoom relaxation configuration for the given item (never null). */
     public static AdsReloadZoomControlConfig getAdsReloadZoomControlConfig(ItemStack stack) {
         return getData(stack).getAdsReloadZoomControl();
+    }
+
+    /** The custom crosshair configuration for the given item (never null). */
+    public static CustomCrosshairConfig getCustomCrosshair(ItemStack stack) {
+        return getData(stack).getCustomCrosshair();
     }
 
     /** Clears the index, forcing it to be rebuilt on next access. */

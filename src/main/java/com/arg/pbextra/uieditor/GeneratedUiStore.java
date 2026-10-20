@@ -51,6 +51,18 @@ public final class GeneratedUiStore {
         return target;
     }
 
+    /** Writes a JSON object to an explicit file, creating its parent directories. */
+    public static Path writeJson(Path target, JsonObject json) throws IOException {
+        Path parent = target.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        try (Writer writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
+            GSON.toJson(json, writer);
+        }
+        return target;
+    }
+
 
     public static String apply(UiDefinitionKind kind, String id, String json) {
         try {

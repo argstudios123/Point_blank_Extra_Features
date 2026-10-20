@@ -1,12 +1,15 @@
 package com.arg.pbextra;
 
+import com.arg.pbextra.bullethole.BulletHoleSoundEvents;
 import com.arg.pbextra.config.PointBlankExtraConfig;
+import com.arg.pbextra.crosshair.CustomCrosshairPlaceholders;
 import com.arg.pbextra.network.ModNetwork;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import org.slf4j.Logger;
 
@@ -24,5 +27,16 @@ public final class PointBlankExtraFeatures {
         );
 
         modEventBus.addListener((RegisterPayloadHandlersEvent event) -> ModNetwork.register(event));
+
+        if (FMLEnvironment.getDist().isClient()) {
+            // Generate the editable placeholder before the initial resource
+            // reload starts, so the new PNG is picked up in the same launch.
+            CustomCrosshairPlaceholders.installBundled();
+        }
+
+        // Registers the mod's existing bullet-hole impact sounds (the ids in
+        // assets/pointblankextra/sounds.json) so the normal SOUND_EVENT lookup
+        // used by the impact playback code can resolve them.
+        BulletHoleSoundEvents.register(modEventBus);
     }
 }

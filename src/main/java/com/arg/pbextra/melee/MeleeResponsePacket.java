@@ -20,14 +20,11 @@ public final class MeleeResponsePacket implements CustomPacketPayload {
     private final boolean offhand;
     private final String animationName;
     private final int durationMillis;
-    private final int preMeleeMillis;
 
-    public MeleeResponsePacket(boolean offhand, String animationName,
-                              int durationMillis, int preMeleeMillis) {
+    public MeleeResponsePacket(boolean offhand, String animationName, int durationMillis) {
         this.offhand = offhand;
         this.animationName = animationName == null ? "" : animationName;
         this.durationMillis = Math.max(0, durationMillis);
-        this.preMeleeMillis = Math.max(0, preMeleeMillis);
     }
 
     public boolean isOffhand() {
@@ -38,14 +35,9 @@ public final class MeleeResponsePacket implements CustomPacketPayload {
         return animationName;
     }
 
-    /** Playback window in animation-time milliseconds; {@code 0} means "let the animation play out". */
+    /** Playback window in milliseconds; {@code 0} means "let the animation play out". */
     public int getDurationMillis() {
         return durationMillis;
-    }
-
-    /** Animation time at which the hit is applied, in milliseconds. */
-    public int getPreMeleeMillis() {
-        return preMeleeMillis;
     }
 
     @Override
@@ -57,17 +49,14 @@ public final class MeleeResponsePacket implements CustomPacketPayload {
         buf.writeBoolean(msg.offhand);
         buf.writeUtf(msg.animationName);
         buf.writeVarInt(msg.durationMillis);
-        buf.writeVarInt(msg.preMeleeMillis);
     }
 
     public static MeleeResponsePacket decode(FriendlyByteBuf buf) {
-        return new MeleeResponsePacket(buf.readBoolean(), buf.readUtf(), buf.readVarInt(),
-                buf.readVarInt());
+        return new MeleeResponsePacket(buf.readBoolean(), buf.readUtf(), buf.readVarInt());
     }
 
     public static void handle(MeleeResponsePacket msg, IPayloadContext context) {
         context.enqueueWork(() -> MeleeAnimationHandler.playMeleeAnimation(
-                msg.isOffhand(), msg.getAnimationName(),
-                msg.getDurationMillis(), msg.getPreMeleeMillis()));
+                msg.isOffhand(), msg.getAnimationName(), msg.getDurationMillis()));
     }
 }

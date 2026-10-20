@@ -1,11 +1,17 @@
 package com.arg.pbextra.data;
 
+import com.arg.pbextra.animation.AnimationLibraryPaths;
+import com.arg.pbextra.bullethole.BulletHoleConfig;
 import com.arg.pbextra.constraint.AdsConstraintConfig;
 import com.arg.pbextra.constraint.AdsConstraintConstants;
+import com.arg.pbextra.crosshair.CustomCrosshairConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+
+import java.util.Collections;
+import java.util.List;
 
 
 public final class WeaponExtraData {
@@ -20,6 +26,10 @@ public final class WeaponExtraData {
     private final boolean noADSDuringInspect;
     private final boolean disableAdsDuringReload;
     private final AdsReloadZoomControlConfig adsReloadZoomControl;
+    private final BulletHoleConfig bulletHoles;
+    private final CustomCrosshairConfig customCrosshair;
+    private final List<String> additionalFirstPersonFallbacks;
+    private final List<String> declaredFirstPersonFallbacks;
 
     /** Backwards-compatible constructor; the ADS features default to disabled. */
     public WeaponExtraData(boolean toggleAiming, MeleeConfig melee) {
@@ -47,6 +57,44 @@ public final class WeaponExtraData {
                            boolean noADSDuringInspect,
                            boolean disableAdsDuringReload,
                            AdsReloadZoomControlConfig adsReloadZoomControl) {
+        this(toggleAiming, melee, adsConstraint, noADSDuringInspect, disableAdsDuringReload,
+                adsReloadZoomControl, Collections.emptyList(), Collections.emptyList());
+    }
+
+    public WeaponExtraData(boolean toggleAiming, MeleeConfig melee,
+                           AdsConstraintConfig adsConstraint,
+                           boolean noADSDuringInspect,
+                           boolean disableAdsDuringReload,
+                           AdsReloadZoomControlConfig adsReloadZoomControl,
+                           List<String> additionalFirstPersonFallbacks,
+                           List<String> declaredFirstPersonFallbacks) {
+        this(toggleAiming, melee, adsConstraint, noADSDuringInspect, disableAdsDuringReload,
+                adsReloadZoomControl, additionalFirstPersonFallbacks,
+                declaredFirstPersonFallbacks, BulletHoleConfig.BUILT_IN_DEFAULTS);
+    }
+
+    public WeaponExtraData(boolean toggleAiming, MeleeConfig melee,
+                           AdsConstraintConfig adsConstraint,
+                           boolean noADSDuringInspect,
+                           boolean disableAdsDuringReload,
+                           AdsReloadZoomControlConfig adsReloadZoomControl,
+                           List<String> additionalFirstPersonFallbacks,
+                           List<String> declaredFirstPersonFallbacks,
+                           BulletHoleConfig bulletHoles) {
+        this(toggleAiming, melee, adsConstraint, noADSDuringInspect, disableAdsDuringReload,
+                adsReloadZoomControl, additionalFirstPersonFallbacks,
+                declaredFirstPersonFallbacks, bulletHoles, CustomCrosshairConfig.DISABLED);
+    }
+
+    public WeaponExtraData(boolean toggleAiming, MeleeConfig melee,
+                           AdsConstraintConfig adsConstraint,
+                           boolean noADSDuringInspect,
+                           boolean disableAdsDuringReload,
+                           AdsReloadZoomControlConfig adsReloadZoomControl,
+                           List<String> additionalFirstPersonFallbacks,
+                           List<String> declaredFirstPersonFallbacks,
+                           BulletHoleConfig bulletHoles,
+                           CustomCrosshairConfig customCrosshair) {
         this.toggleAiming = toggleAiming;
         this.melee = melee == null ? MeleeConfig.DISABLED : melee;
         this.adsConstraint = adsConstraint == null ? AdsConstraintConfig.DISABLED : adsConstraint;
@@ -54,6 +102,14 @@ public final class WeaponExtraData {
         this.disableAdsDuringReload = disableAdsDuringReload;
         this.adsReloadZoomControl = adsReloadZoomControl == null
                 ? AdsReloadZoomControlConfig.DISABLED : adsReloadZoomControl;
+        this.bulletHoles = bulletHoles == null
+                ? BulletHoleConfig.BUILT_IN_DEFAULTS : bulletHoles;
+        this.customCrosshair = customCrosshair == null
+                ? CustomCrosshairConfig.DISABLED : customCrosshair;
+        this.additionalFirstPersonFallbacks = additionalFirstPersonFallbacks == null
+                ? List.of() : List.copyOf(additionalFirstPersonFallbacks);
+        this.declaredFirstPersonFallbacks = declaredFirstPersonFallbacks == null
+                ? List.of() : List.copyOf(declaredFirstPersonFallbacks);
     }
 
     public boolean isToggleAiming() {
@@ -80,8 +136,36 @@ public final class WeaponExtraData {
         return adsReloadZoomControl;
     }
 
+    /** Effective bullet-hole configuration for this weapon (never null). */
+    public BulletHoleConfig getBulletHoles() {
+        return bulletHoles;
+    }
+
+    /** Effective custom crosshair configuration for this weapon (never null). */
+    public CustomCrosshairConfig getCustomCrosshair() {
+        return customCrosshair;
+    }
+
+    /** Additive array entries from {@code firstPersonFallbackAnimations}. */
+    public List<String> getAdditionalFirstPersonFallbacks() {
+        return additionalFirstPersonFallbacks;
+    }
+
+    /** All declared fallback values, including the native string form. */
+    public List<String> getDeclaredFirstPersonFallbacks() {
+        return declaredFirstPersonFallbacks;
+    }
+
 
     public static WeaponExtraData fromJson(JsonObject obj) {
+        return fromJson(obj, BulletHoleConfig.BUILT_IN_DEFAULTS);
+    }
+
+    /**
+     * Parses one weapon definition, resolving bullet holes over the supplied
+     * content-pack defaults (or the built-in defaults for Point Blank's own guns).
+     */
+    public static WeaponExtraData fromJson(JsonObject obj, BulletHoleConfig packDefaults) {
         if (obj == null) {
             return EMPTY;
         }
@@ -92,9 +176,81 @@ public final class WeaponExtraData {
         boolean noADSDuringInspect = parseNoADSDuringInspect(obj);
         boolean disableAdsDuringReload = parseDisableAdsDuringReload(obj);
         AdsReloadZoomControlConfig adsReloadZoomControl = parseAdsReloadZoomControl(obj);
+        BulletHoleConfig bulletHoles = parseBulletHoles(obj, packDefaults);
+        CustomCrosshairConfig customCrosshair = parseCustomCrosshair(obj);
+        JsonElement fallbackAnimations = obj.get(AnimationLibraryPaths.KEY);
+        List<String> additionalFirstPersonFallbacks =
+                AnimationLibraryPaths.parseAdditional(fallbackAnimations);
+        List<String> declaredFirstPersonFallbacks =
+                AnimationLibraryPaths.parseDeclared(fallbackAnimations);
 
         return new WeaponExtraData(toggleAiming, melee, adsConstraint,
-                noADSDuringInspect, disableAdsDuringReload, adsReloadZoomControl);
+                noADSDuringInspect, disableAdsDuringReload, adsReloadZoomControl,
+                additionalFirstPersonFallbacks, declaredFirstPersonFallbacks,
+                bulletHoles, customCrosshair);
+    }
+
+
+    /**
+     * Reads the optional {@code bulletHoles} feature. A missing entry inherits
+     * the pack defaults (bullet holes stay enabled), which is what makes every
+     * gun work without editing its JSON.
+     */
+    private static BulletHoleConfig parseBulletHoles(JsonObject obj, BulletHoleConfig packDefaults) {
+        if (obj.has("features") && obj.get("features").isJsonArray()) {
+            JsonArray features = obj.getAsJsonArray("features");
+            for (JsonElement feature : features) {
+                if (feature.isJsonObject()
+                        && isFeatureOfType(feature.getAsJsonObject(),
+                                BulletHoleConfig.FEATURE_TYPE)) {
+                    return BulletHoleConfig.resolve(
+                            BulletHoleConfig.Overrides.fromJson(feature.getAsJsonObject()),
+                            packDefaults);
+                }
+            }
+        }
+
+        JsonElement root = obj.get(BulletHoleConfig.SETTINGS_KEY_CAMEL);
+        if (root == null) {
+            root = obj.get(BulletHoleConfig.SETTINGS_KEY);
+        }
+        if (root != null && root.isJsonObject()) {
+            return BulletHoleConfig.resolve(
+                    BulletHoleConfig.Overrides.fromJson(root.getAsJsonObject()),
+                    packDefaults);
+        }
+
+        return BulletHoleConfig.resolve(BulletHoleConfig.Overrides.NONE, packDefaults);
+    }
+
+
+
+    /**
+     * Reads the optional {@code custom_crosshair} feature. A missing entry
+     * leaves Point Blank's normal crosshair untouched. A present entry with a
+     * missing texture is retained so the renderer can fall back safely.
+     */
+    private static CustomCrosshairConfig parseCustomCrosshair(JsonObject obj) {
+        if (obj.has("features") && obj.get("features").isJsonArray()) {
+            JsonArray features = obj.getAsJsonArray("features");
+            for (JsonElement feature : features) {
+                if (feature.isJsonObject()
+                        && isFeatureOfType(feature.getAsJsonObject(),
+                                CustomCrosshairConfig.FEATURE_TYPE)) {
+                    return CustomCrosshairConfig.fromJson(feature.getAsJsonObject());
+                }
+            }
+        }
+
+        JsonElement root = obj.get(CustomCrosshairConfig.SETTINGS_KEY_CAMEL);
+        if (root == null) {
+            root = obj.get(CustomCrosshairConfig.SETTINGS_KEY);
+        }
+        if (root != null && root.isJsonObject()) {
+            return CustomCrosshairConfig.fromJson(root.getAsJsonObject());
+        }
+
+        return CustomCrosshairConfig.DISABLED;
     }
 
 

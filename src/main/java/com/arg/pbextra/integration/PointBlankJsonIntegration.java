@@ -1,5 +1,6 @@
 package com.arg.pbextra.integration;
 
+import com.arg.pbextra.bullethole.BulletHoleConfig;
 import com.arg.pbextra.data.WeaponExtraData;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -34,6 +35,9 @@ public final class PointBlankJsonIntegration {
 
     private static final String EXTENSION_ITEMS_DIR = "assets/pointblank/items";
 
+    /** Optional pack-wide bullet-hole configuration, next to {@code ext.json}. */
+    public static final String PACK_BULLET_HOLE_CONFIG = "bullet_holes.json";
+
     private PointBlankJsonIntegration() {
     }
 
@@ -60,14 +64,17 @@ public final class PointBlankJsonIntegration {
             for (Path entry : stream) {
                 try {
                     if (Files.isDirectory(entry)) {
+                        BulletHoleConfig packDefaults = readPackConfig(entry);
                         // Point Blank extension layout: <extension>/assets/pointblank/items/*.json
-                        scanItemsDirectory(entry.resolve(EXTENSION_ITEMS_DIR), out, failures);
+                        scanItemsDirectory(entry.resolve(EXTENSION_ITEMS_DIR), out, failures,
+                                packDefaults);
                         // Legacy layout accepted by earlier versions of this addon.
-                        scanItemsDirectory(entry.resolve(ITEMS_DIR), out, failures);
+                        scanItemsDirectory(entry.resolve(ITEMS_DIR), out, failures,
+                                packDefaults);
                     } else {
                         String fileName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
                         if (fileName.endsWith(".zip") || fileName.endsWith(".jar")) {
-                            scanItemsZip(entry, out, failures);
+                            scanItemsZip(entry, out, failures, readPackConfig(entry));
                         }
                     }
                 } catch (Exception e) {
@@ -120,7 +127,8 @@ public final class PointBlankJsonIntegration {
             Identifier loc = entry.getKey();
             String fallbackName = stripItemsPrefixAndExtension(loc.getPath());
             try (InputStream is = entry.getValue().open()) {
-                parseWeapon(new InputStreamReader(is, StandardCharsets.UTF_8), fallbackName, out);
+                parseWeapon(new InputStreamReader(is, StandardCharsets.UTF_8), fallbackName, out,
+                        BulletHoleConfig.BUILT_IN_DEFAULTS, false);
             } catch (Exception e) {
                 failures.put(fallbackName, loc + ": " + describe(e));
                 LOGGER.warn("Could not read Point Blank item resource '{}': {}", loc, e.getMessage());
@@ -130,7 +138,8 @@ public final class PointBlankJsonIntegration {
     }
 
     private static void scanItemsDirectory(Path itemsDir, Map<String, WeaponExtraData> out,
-                                           Map<String, String> failures) {
+                                           Map<String, String> failures,
+                                           BulletHoleConfig packDefaults) {
         if (!Files.isDirectory(itemsDir)) {
             return;
         }
@@ -139,7 +148,7 @@ public final class PointBlankJsonIntegration {
             for (Path path : stream) {
                 String fallbackName = stripItemsPrefixAndExtension(path.getFileName().toString());
                 try (Reader reader = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
-                    parseWeapon(reader, fallbackName, out);
+                    parseWeapon(reader, fallbackName, out, packDefaults, true);
                 } catch (Exception e) {
                     failures.put(fallbackName, path + ": " + describe(e));
                     LOGGER.warn("Could not read Point Blank item JSON '{}': {}", path, e.getMessage());
@@ -152,7 +161,8 @@ public final class PointBlankJsonIntegration {
     }
 
     private static void scanItemsZip(Path zipPath, Map<String, WeaponExtraData> out,
-                                     Map<String, String> failures) {
+                                     Map<String, String> failures,
+                                     BulletHoleConfig packDefaults) {
         try (ZipFile zipFile = new ZipFile(zipPath.toFile())) {
             var entries = zipFile.entries();
             while (entries.hasMoreElements()) {
@@ -166,7 +176,7 @@ public final class PointBlankJsonIntegration {
                 String fallbackName = stripItemsPrefixAndExtension(name);
                 try (Reader reader = new InputStreamReader(
                         zipFile.getInputStream(entry), StandardCharsets.UTF_8)) {
-                    parseWeapon(reader, fallbackName, out);
+                    parseWeapon(reader, fallbackName, out, packDefaults, true);
                 } catch (Exception e) {
                     failures.put(fallbackName, name + " in '" + zipPath + "': " + describe(e));
                     LOGGER.warn("Could not read Point Blank item JSON '{}' in '{}': {}",
@@ -181,14 +191,82 @@ public final class PointBlankJsonIntegration {
     }
 
     private static void parseWeapon(Reader reader, String fallbackName,
-                                    Map<String, WeaponExtraData> out) {
+                                    Map<String, WeaponExtraData> out,
+                                    BulletHoleConfig packDefaults,
+                                    boolean overwrite) {
         JsonObject obj = JsonParser.parseReader(reader).getAsJsonObject();
         String name = fallbackName;
         if (obj.has("name") && obj.get("name").isJsonPrimitive()) {
             name = obj.get("name").getAsString();
         }
-        out.put(name, WeaponExtraData.fromJson(obj));
+        WeaponExtraData data = WeaponExtraData.fromJson(obj, packDefaults);
+        if (overwrite) {
+            out.put(name, data);
+        } else {
+            // Resource-manager entries can include extension-pack items that were
+            // already scanned from disk with their pack-wide defaults. Never
+            // overwrite those with built-in defaults.
+            out.putIfAbsent(name, data);
+        }
     }
+
+    /**
+     * Reads the optional pack-wide bullet-hole settings. Both layouts are
+     * accepted, with the root file next to {@code ext.json} taking precedence:
+     * <pre>
+     * &lt;pack&gt;/bullet_holes.json
+     * &lt;pack&gt;/assets/pointblank/bullet_holes.json
+     * </pre>
+     * Existing packs without such a file simply inherit the built-in defaults.
+     */
+    private static BulletHoleConfig readPackConfig(Path pack) {
+        if (pack == null) {
+            return BulletHoleConfig.BUILT_IN_DEFAULTS;
+        }
+        try {
+            if (Files.isDirectory(pack)) {
+                Path file = pack.resolve(PACK_BULLET_HOLE_CONFIG);
+                if (!Files.isRegularFile(file)) {
+                    file = pack.resolve("assets/pointblank/" + PACK_BULLET_HOLE_CONFIG);
+                }
+                if (!Files.isRegularFile(file)) {
+                    return BulletHoleConfig.BUILT_IN_DEFAULTS;
+                }
+                try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                    return BulletHoleConfig.fromJson(
+                            JsonParser.parseReader(reader).getAsJsonObject(),
+                            BulletHoleConfig.BUILT_IN_DEFAULTS);
+                }
+            }
+
+            String fileName = pack.getFileName() == null
+                    ? "" : pack.getFileName().toString().toLowerCase(Locale.ROOT);
+            if (!fileName.endsWith(".zip") && !fileName.endsWith(".jar")) {
+                return BulletHoleConfig.BUILT_IN_DEFAULTS;
+            }
+
+            try (ZipFile zipFile = new ZipFile(pack.toFile())) {
+                ZipEntry entry = zipFile.getEntry(PACK_BULLET_HOLE_CONFIG);
+                if (entry == null) {
+                    entry = zipFile.getEntry("assets/pointblank/" + PACK_BULLET_HOLE_CONFIG);
+                }
+                if (entry == null) {
+                    return BulletHoleConfig.BUILT_IN_DEFAULTS;
+                }
+                try (Reader reader = new InputStreamReader(
+                        zipFile.getInputStream(entry), StandardCharsets.UTF_8)) {
+                    return BulletHoleConfig.fromJson(
+                            JsonParser.parseReader(reader).getAsJsonObject(),
+                            BulletHoleConfig.BUILT_IN_DEFAULTS);
+                }
+            }
+        } catch (Exception exception) {
+            LOGGER.warn("Could not read pack-wide bullet-hole configuration from '{}': {}",
+                    pack, describe(exception));
+            return BulletHoleConfig.BUILT_IN_DEFAULTS;
+        }
+    }
+
 
     private static String describe(Throwable throwable) {
         if (throwable == null) {

@@ -18,8 +18,9 @@ public final class ColorSwatchWidget extends FlatButton {
 
     @Override
     protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        UiEditorTheme.Palette palette = UiEditorTheme.active().palette();
         int color = getter.get() == null ? 0xFFFFFFFF : getter.get();
-        int border = active && isHoveredOrFocused() ? 0xFFFFFFFF : 0xFF505860;
+        int border = active && isHoveredOrFocused() ? palette.title() : palette.buttonBorder();
         int left = getX() + 1;
         int top = getY() + 1;
         int right = getX() + getWidth() - 1;

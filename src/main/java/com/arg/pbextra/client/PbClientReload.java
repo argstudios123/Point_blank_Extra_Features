@@ -1,6 +1,7 @@
 package com.arg.pbextra.client;
 
 import com.arg.pbextra.PointBlankExtraFeatures;
+import com.arg.pbextra.crosshair.CustomCrosshairPlaceholders;
 import com.arg.pbextra.reload.PointBlankContentReload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -31,6 +32,10 @@ public final class PbClientReload {
             return;
         }
         inProgress = true;
+
+        // Create placeholders for packs added since the last launch before the
+        // resource reload, so the new files are visible in this reload.
+        CustomCrosshairPlaceholders.installBundled();
 
         String rediscoveryWarning = minecraft.getSingleplayerServer() == null
                 ? PointBlankContentReload.rediscoverExtensionPacks() : null;

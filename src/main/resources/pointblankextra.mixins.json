@@ -2,9 +2,10 @@
   "required": true,
   "minVersion": "0.8",
   "package": "com.arg.pbextra.mixin",
-  "compatibilityLevel": "JAVA_21",
+  "compatibilityLevel": "JAVA_25",
   "client": [
     "ClientEventHandlerMixin",
+    "ClientEventHandlerCrosshairMixin",
     "AdsSwitchFovMixin",
     "GunItemOverlayReserveAmmoMixin",
     "AdsConstraintProcessorMixin",
@@ -12,10 +13,15 @@
     "NoADSDuringInspectMixin",
     "NoADSDuringInspectBlockMixin",
     "NoADSDuringReloadMixin",
-    "NoADSDuringReloadBlockMixin"
+    "NoADSDuringReloadBlockMixin",
+    "GunGeoModelAnimationLibrariesMixin",
+    "GeckoLibResourcesAnimationLibrariesMixin",
+    "MuzzleFlashConcurrencyMixin",
+    "ClientLevelBulletHoleMixin"
   ],
   "mixins": [
     "GunItemMeleeControllerMixin",
+    "GunItemBuilderAnimationLibrariesMixin",
     "GunItemInfiniteMagazineMixin",
     "CommonEventHandlerInfiniteRefundMixin",
     "SoundFeatureAccessor",
@@ -23,7 +29,8 @@
     "FeatureConditionJsonMixin",
     "FeatureConditionJsonExtraMixin",
     "ConditionsCarrierMixin",
-    "FireModeInfiniteAmmoCapacityMixin"
+    "FireModeInfiniteAmmoCapacityMixin",
+    "HurtingItemBulletHoleContextMixin"
   ],
   "injectors": {
     "defaultRequire": 1

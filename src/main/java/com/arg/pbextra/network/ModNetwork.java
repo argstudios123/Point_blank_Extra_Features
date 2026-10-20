@@ -1,6 +1,5 @@
 package com.arg.pbextra.network;
 
-import com.arg.pbextra.melee.MeleeImpactPacket;
 import com.arg.pbextra.melee.MeleeRequestPacket;
 import com.arg.pbextra.melee.MeleeResponsePacket;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -12,7 +11,13 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  */
 public final class ModNetwork {
 
-    private static final String PROTOCOL_VERSION = "1";
+    /**
+     * Protocol version 5: adds optional sound id and impact volume to the
+     * server-to-client bullet-hole impact payload. Bumping the version makes an
+     * old/new mismatch fail the channel negotiation cleanly instead of decoding
+     * incompatible payloads.
+     */
+    private static final String PROTOCOL_VERSION = "5";
 
     private ModNetwork() {
     }
@@ -28,10 +33,6 @@ public final class ModNetwork {
                 MeleeResponsePacket.TYPE,
                 MeleeResponsePacket.STREAM_CODEC,
                 MeleeResponsePacket::handle);
-        registrar.playToServer(
-                MeleeImpactPacket.TYPE,
-                MeleeImpactPacket.STREAM_CODEC,
-                MeleeImpactPacket::handle);
         // Server -> client only: the editor's configuration is read and written on
         // the client because the HUD it edits is rendered there.
         registrar.playToClient(
@@ -44,5 +45,11 @@ public final class ModNetwork {
                 ReloadContentPacket.TYPE,
                 ReloadContentPacket.STREAM_CODEC,
                 ReloadContentPacket::handle);
+        // Server -> client: one visual bullet-hole impact; clients create a
+        // lightweight decal, the server stores no bullet-hole state.
+        registrar.playToClient(
+                BulletHoleImpactPacket.TYPE,
+                BulletHoleImpactPacket.STREAM_CODEC,
+                BulletHoleImpactPacket::handle);
     }
 }

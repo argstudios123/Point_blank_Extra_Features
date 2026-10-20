@@ -12,6 +12,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 public final class ServerEvents {
 
@@ -37,8 +39,27 @@ public final class ServerEvents {
         @SubscribeEvent
         public static void onLivingDeath(LivingDeathEvent event) {
             if (event.getEntity() instanceof Player player) {
-                MeleeManager.clearCooldown(player.getUUID());
+                MeleeManager.clearPlayerState(player.getUUID());
             }
+        }
+
+        @SubscribeEvent
+        public static void onServerTick(ServerTickEvent.Post event) {
+            MeleeManager.tick(event.getServer());
+        }
+
+        @SubscribeEvent
+        public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+            // Do not keep attack state for a player who is no longer online.
+            MeleeManager.clearPlayerState(event.getEntity().getUUID());
+        }
+
+        @SubscribeEvent
+        public static void onPlayerClone(PlayerEvent.Clone event) {
+            // Respawning replaces the player entity; an interrupted swing must
+            // not be able to execute on the new one.
+            MeleeManager.clearPlayerState(event.getOriginal().getUUID());
+            MeleeManager.clearPlayerState(event.getEntity().getUUID());
         }
     }
 }

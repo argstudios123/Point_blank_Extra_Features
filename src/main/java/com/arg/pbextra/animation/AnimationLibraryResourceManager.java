@@ -16,25 +16,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 
-/**
- * Resource-manager view used only while GeckoLib bakes its animation cache.
- * <p>
- * GeckoLib lists {@code geckolib/animations} and bakes every resource returned
- * from that listing. Point Blank's extension packs remap their
- * {@code assets/pointblank/animations} directory into that path, but files in
- * {@code assets/pointblank/default_animations} are invisible to GeckoLib.
- * <p>
- * This wrapper leaves the delegate's map untouched, then adds each
- * {@code default_animations/**} animation resource under a synthetic
- * {@code geckolib/animations/default_animations/**} identifier. GeckoLib's
- * existing loader strips the {@code geckolib/animations/} prefix and stores the
- * definitions under {@code namespace:default_animations/...}, which is exactly
- * the key used by {@link AnimationLibraryPaths#customLibraryIdentifier(String)}.
- * <p>
- * The wrapper is created once per GeckoLib animation-cache build, so it cannot
- * retain stale resources across resource reloads. It does not modify Point
- * Blank or GeckoLib itself.
- */
+// Resource manager for
 public final class AnimationLibraryResourceManager implements ResourceManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();

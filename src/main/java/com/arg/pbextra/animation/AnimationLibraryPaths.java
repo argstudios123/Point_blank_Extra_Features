@@ -9,12 +9,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 
-/**
- * Pure parsing and path helpers for reusable first-person animation libraries.
- * <p>
- * Nothing in this class touches Minecraft classes, so the JSON and path rules
- * can be unit-tested without a game runtime.
- */
+// here the library to reuse the animations
 public final class AnimationLibraryPaths {
 
     /** The Point Blank weapon JSON key handled by this feature. */
@@ -165,20 +160,7 @@ public final class AnimationLibraryPaths {
     }
 
 
-    /**
-     * Traditional {@code namespace:item/path} animation resource identifier for
-     * a configured library, or {@code null} when the entry already targets the
-     * optional {@code default_animations/} root.
-     * <p>
-     * Point Blank's fallback list stores animation <em>resource</em> identifiers,
-     * not file paths: {@code DefaultedItemGeoModel.buildFormattedAnimationPath}
-     * prefixes the {@code item/} subtype, so {@code walking_animations} becomes
-     * {@code pointblank:item/walking_animations}. An entry such as
-     * {@code default_animations/pistol_anims/aw_pistol_dualwield_lefthand} can
-     * never exist under {@code animations/item/}, so emitting
-     * {@code pointblank:item/default_animations/...} would only add a resource
-     * that is guaranteed to be missing from GeckoLib's baked cache.
-     */
+
     public static String traditionalLibraryIdentifier(String value) {
         String normalized = normalizeIdentifier(value);
         if (normalized == null) {
@@ -195,13 +177,7 @@ public final class AnimationLibraryPaths {
     }
 
 
-    /**
-     * Synthetic GeckoLib resource identifier for a file discovered under
-     * {@code default_animations/}. GeckoLib bakes
-     * {@code geckolib/animations/default_animations/...} into the cache key
-     * {@code namespace:default_animations/...}, which is exactly what
-     * {@link #customLibraryIdentifier(String)} returns.
-     */
+
     public static String customAnimationTargetPath(String sourcePath) {
         if (sourcePath == null || !sourcePath.endsWith(".animation.json")) {
             return null;
@@ -214,13 +190,7 @@ public final class AnimationLibraryPaths {
     }
 
 
-    /**
-     * Returns the two resource paths GeckoLib/Point Blank resolve an item
-     * animation through (the modern content-pack root and the legacy built-in
-     * root), plus the optional {@code default_animations} root. The first two
-     * preserve existing behaviour; the last one is loaded by the addon's
-     * GeckoLib resource-manager wrapper.
-     */
+
     public static List<String> candidateAnimationResources(String identifier) {
         String normalized = normalizeIdentifier(identifier);
         if (normalized == null) {
@@ -239,12 +209,7 @@ public final class AnimationLibraryPaths {
     }
 
 
-    /**
-     * GeckoLib cache keys that can satisfy a configured library. The
-     * traditional key is checked first to preserve existing content packs;
-     * the custom-directory key is checked next. Entries that already target
-     * {@code default_animations/} only have the custom-directory key.
-     */
+
     public static List<String> candidateAnimationCacheKeys(String identifier) {
         String normalized = normalizeIdentifier(identifier);
         if (normalized == null) {

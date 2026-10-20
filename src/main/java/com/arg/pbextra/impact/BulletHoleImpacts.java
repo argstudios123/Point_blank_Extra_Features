@@ -34,22 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-/**
- * Server-side bullet-hole impact bridge.
- * <p>
- * Point Blank posts {@link BlockHitEvent} for both hitscan shots
- * ({@code GunItem#hitScanTarget}) and projectiles
- * ({@code SlowProjectile#onHitBlock}), after its own collision result has been
- * computed. The listener only reads that result and broadcasts it; Point Blank's
- * impact, damage, explosion and cancellation behaviour is left untouched.
- * <p>
- * The master visual switch is a client setting, so decal rendering is
- * enforced on the client when the packet is received. The server-side
- * per-gun/pack configuration is checked here to avoid sending packets when both
- * visuals and sounds are disabled. Sound playback is selected here but
- * executed on each client, so a dedicated server never calls client audio
- * code.</p>
- */
+
 public final class BulletHoleImpacts {
 
     private static final double BROADCAST_RADIUS = 96.0D;

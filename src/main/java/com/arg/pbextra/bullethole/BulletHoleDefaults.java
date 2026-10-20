@@ -35,16 +35,16 @@ public final class BulletHoleDefaults {
             id("textures/bullet_holes/sand.png");
 
     /** Decal size in blocks. */
-    public static final float SIZE = 0.12F;
+    public static final float SIZE = 0.14F;
 
     /** Decal lifetime in client ticks (20 ticks = 1 second). */
-    public static final int LIFETIME_TICKS = 1_200;
+    public static final int LIFETIME_TICKS = 2_900;
 
     /** Upper decal bound per chunk. */
     public static final int MAX_PER_CHUNK = 256;
 
     /** Maximum block-debris particles spawned for one bullet impact (0 disables them). */
-    public static final int MAX_BLOCK_PARTICLES = 5;
+    public static final int MAX_BLOCK_PARTICLES = 3;
 
     /**
      * Maximum distance in blocks at which an impact sound can be heard.
@@ -54,7 +54,7 @@ public final class BulletHoleDefaults {
     public static final float MAX_SOUND_DISTANCE = 15.0F;
 
     /* ------------------------------------------------------------------ */
-    /* Impact sound defaults  this si where it starts                     */
+    /* Impact sound defaults  this is where it starts                     */
     /* ------------------------------------------------------------------ */
 
     /** Whether material impact sounds play for a gun that declares no setting. */
@@ -122,6 +122,7 @@ public final class BulletHoleDefaults {
         texture(textures, "minecraft:cobblestone", STONE_TEXTURE);
         texture(textures, "minecraft:deepslate", STONE_TEXTURE);
         texture(textures, "minecraft:stone_bricks", STONE_TEXTURE);
+        texture(textures, "minecraft:beacon", GLASS_TEXTURE);
         // Glass, dirt and sand are deliberately tag-based so a pack/gun tag
         // override applies to every member of the tag. Unmatched blocks such as
         // farmland remain on the effective default texture.

@@ -16,23 +16,7 @@ import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
 
-/**
- * Supplies custom artwork to Vic's Point Blank's native crosshair pipeline.
- *
- * <p>The mixin redirect runs inside VPB's existing crosshair branch, after VPB
- * has already performed its visibility checks and computed its smoothed
- * expansion. This class never calculates movement, sprinting, jumping,
- * crouching, camera, firing, recovery or smoothing values.</p>
- *
- * <p>{@link CustomCrosshairLayout#POINTBLANK} textures are 39x39 native atlases
- * and are passed straight to {@link CrosshairRenderer#renderCrosshairOverlay3};
- * VPB owns the entire behavior and geometry. Point Blank 2.2.0 never draws the
- * top atlas region, so this renderer adds the missing top quad as a mirror of
- * the native bottom quad, using the same native expansion value.
- * {@link CustomCrosshairLayout#COMPLETE} textures keep the old arbitrary-PNG
- * support with a deliberately simple static draw; a complete image cannot
- * reproduce VPB's segmented atlas movement.</p>
- */
+
 public final class CustomCrosshairRenderer {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -41,10 +25,7 @@ public final class CustomCrosshairRenderer {
     private CustomCrosshairRenderer() {
     }
 
-    /**
-     * @return {@code true} when custom artwork was drawn; {@code false} when
-     *         the caller must draw VPB's ordinary native crosshair.
-     */
+
     public static boolean renderNativeBranch(GuiGraphicsExtractor graphics,
                                              float partialTick,
                                              float expansion,
@@ -116,11 +97,7 @@ public final class CustomCrosshairRenderer {
         return true;
     }
 
-    /**
-     * Draws the top atlas region that the native renderer omits. The quad is the
-     * vertical mirror of VPB's native bottom quad and uses the same native
-     * expansion value, pipeline, arm span and UV region size.
-     */
+
     private static void renderTopSegment(GuiGraphicsExtractor graphics,
                                          Identifier texture,
                                          float expansion,

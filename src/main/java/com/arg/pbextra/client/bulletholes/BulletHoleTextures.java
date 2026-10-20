@@ -14,14 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-/**
- * Client-side texture validation and render-type cache for bullet holes.
- * <p>
- * A configured texture is checked once against the resource manager; missing or
- * invalid textures fall back to the built-in default and are only warned about
- * once. Render types are memoised per resolved texture, so an impact never
- * rebuilds shader state.
- */
+
 public final class BulletHoleTextures {
 
     private static final Logger LOGGER = LogUtils.getLogger();

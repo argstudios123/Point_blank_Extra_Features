@@ -5,19 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 
-/**
- * Parsed {@code custom_crosshair} feature settings.
- *
- * <p>The feature is optional per weapon. When present, {@code enabled}
- * defaults to {@code true}; {@code texture} is the resource path and
- * {@code size} controls the static complete-image size. {@code layout} selects
- * between the native Point Blank 39x39 atlas (which reuses VPB's renderer and
- * therefore its exact expansion, smoothing, positioning and visibility) and
- * the backwards-compatible complete-image fallback, which is rendered statically.
- * A missing or invalid texture is represented by {@link #hasTexture()} returning
- * {@code false}, so the renderer can leave Point Blank's normal crosshair in
- * place instead of suppressing it.</p>
- */
+
 public final class CustomCrosshairConfig {
 
     public static final String FEATURE_TYPE = "custom_crosshair";

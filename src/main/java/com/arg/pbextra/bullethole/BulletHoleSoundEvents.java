@@ -9,17 +9,7 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 
-/**
- * Registers the mod's existing bullet-hole impact sounds as real sound events.
- *
- * <p>The ids are exactly the keys already used by
- * {@code assets/pointblankextra/sounds.json}; only the missing Java
- * registration is added, so no new ids or duplicate registrations are
- * introduced. Registering them lets the ordinary
- * {@link net.minecraft.core.registries.BuiltInRegistries#SOUND_EVENT} lookup
- * used by the impact playback code resolve {@link BulletHoleDefaults#DEFAULT_SOUND}
- * (and the other built-in material sounds) instead of treating them as missing.</p>
- */
+// here this class will handle the  Sound events of bullet impacts on block surfaces
 public final class BulletHoleSoundEvents {
 
     private static final DeferredRegister<SoundEvent> SOUND_EVENTS =

@@ -24,18 +24,6 @@ public class MeleeAnimationController extends AnimationController<GunItem> {
         });
     }
 
-    /**
-     * Releases this controller's pose completely.
-     * <p>
-     * GeckoLib's {@code stopTriggeredAnimation()} is <em>not</em> a release: it
-     * keeps the controller's {@code animationPoint} and {@code timeline} alive and
-     * pins them to the last frame. Because this controller is registered after
-     * Point Blank's own controllers, such a pinned pose keeps overriding
-     * {@code main}, {@code leftarm}, {@code rightarm} and {@code _camera_} forever
-     * (no walking bob, no recoil/view shake, wrong dual-wield pose).
-     * {@link #reset()} clears the animation point, timeline and raw animation, so
-     * the controller stops contributing bone snapshots entirely.
-     */
     public void release() {
         this.reset();
     }

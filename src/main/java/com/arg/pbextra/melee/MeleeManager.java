@@ -33,19 +33,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-/**
- * Server-authoritative melee attacks.
- * <p>
- * The client only reports that the melee key is down (subject to its own local
- * cooldown). The server decides whether the swing is legal, picks the animation,
- * schedules the damage using the animation's {@code preMelee} time and performs
- * all target selection itself. A swing is therefore never dependent on a
- * client-side animation callback, and a client cannot choose targets or damage.
- * <p>
- * Each player has at most one unexecuted impact at a time. That guarantees that
- * one swing can never deal damage twice and that two swings cannot overlap,
- * while still allowing the next swing as soon as the cooldown permits.
- */
+
 public final class MeleeManager {
 
     private static final Logger LOGGER = LogUtils.getLogger();

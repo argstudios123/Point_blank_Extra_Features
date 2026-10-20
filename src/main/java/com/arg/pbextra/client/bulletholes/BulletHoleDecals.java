@@ -61,7 +61,6 @@ public final class BulletHoleDecals {
 
     /** Tiny outward offset, on top of the render type's depth offset. */
     private static final double SURFACE_OFFSET = 0.0025D;
-    private static final float SQRT_TWO = 1.4142135F;
 
     private static final LinkedHashSet<BulletHoleDecal> ALL_DECALS = new LinkedHashSet<>();
     private static final Map<Long, LinkedHashSet<BulletHoleDecal>> BY_CHUNK = new HashMap<>();
@@ -482,54 +481,22 @@ public final class BulletHoleDecals {
         }
 
         Vec3 localHit = location.subtract(pos.getX(), pos.getY(), pos.getZ());
-        AABB faceBox = selectFaceBox(shape.toAabbs(), face, localHit);
+        AABB faceBox = BulletHolePlacement.selectFaceBox(shape.toAabbs(), face, localHit);
         if (faceBox == null) {
             return null;
         }
 
-        Direction.Axis uAxis = uAxis(face);
-        Direction.Axis vAxis = vAxis(face);
-        Direction.Axis nAxis = face.getAxis();
-        double faceWidth = axisLength(faceBox, uAxis);
-        double faceHeight = axisLength(faceBox, vAxis);
-
-        // A rotated square must fit inside the face; shrink instead of overhanging.
-        float size = (float) Math.min(config.getSize(),
-                Math.min(faceWidth, faceHeight) / SQRT_TWO);
-        if (size < BulletHoleConfig.MIN_SIZE) {
+        double angle = randomAngle(pos, face, localHit);
+        BulletHolePlacement.Placement placement = BulletHolePlacement.place(
+                faceBox, face, localHit, config.getSize(), angle, SURFACE_OFFSET);
+        if (placement == null) {
             return null;
         }
 
-        double half = size * 0.5D;
-        double inset = half * SQRT_TWO;
-        double uCenter = clampAxis(axisValue(localHit, uAxis),
-                axisMin(faceBox, uAxis), axisMax(faceBox, uAxis), inset);
-        double vCenter = clampAxis(axisValue(localHit, vAxis),
-                axisMin(faceBox, vAxis), axisMax(faceBox, vAxis), inset);
-        double plane = face.getAxisDirection() == Direction.AxisDirection.POSITIVE
-                ? axisMax(faceBox, nAxis) : axisMin(faceBox, nAxis);
-
-        double[] center = new double[3];
-        center[axisIndex(uAxis)] = uCenter;
-        center[axisIndex(vAxis)] = vCenter;
-        center[axisIndex(nAxis)] = plane;
-        center[0] += face.getStepX() * SURFACE_OFFSET;
-        center[1] += face.getStepY() * SURFACE_OFFSET;
-        center[2] += face.getStepZ() * SURFACE_OFFSET;
-
-        Vec3 uDir = axisUnit(uAxis);
-        Vec3 vDir = axisUnit(vAxis);
-        double angle = randomAngle(pos, face, localHit);
-        double cos = Math.cos(angle);
-        double sin = Math.sin(angle);
-        Vec3 ru = uDir.scale(cos).add(vDir.scale(sin));
-        Vec3 rv = vDir.scale(cos).subtract(uDir.scale(sin));
-        Vec3 origin = new Vec3(pos.getX() + center[0], pos.getY() + center[1],
-                pos.getZ() + center[2]);
-        Vec3 c0 = origin.subtract(ru.scale(half)).subtract(rv.scale(half));
-        Vec3 c1 = origin.add(ru.scale(half)).subtract(rv.scale(half));
-        Vec3 c2 = origin.add(ru.scale(half)).add(rv.scale(half));
-        Vec3 c3 = origin.subtract(ru.scale(half)).add(rv.scale(half));
+        Vec3 c0 = placement.c0().add(pos.getX(), pos.getY(), pos.getZ());
+        Vec3 c1 = placement.c1().add(pos.getX(), pos.getY(), pos.getZ());
+        Vec3 c2 = placement.c2().add(pos.getX(), pos.getY(), pos.getZ());
+        Vec3 c3 = placement.c3().add(pos.getX(), pos.getY(), pos.getZ());
         float[] corners = {
                 (float) c0.x, (float) c0.y, (float) c0.z,
                 (float) c1.x, (float) c1.y, (float) c1.z,
@@ -553,112 +520,8 @@ public final class BulletHoleDecals {
                 level.getGameTime() + lifetime, fadeTicks);
     }
 
-    private static AABB selectFaceBox(List<AABB> boxes, Direction face, Vec3 localHit) {
-        Direction.Axis uAxis = uAxis(face);
-        Direction.Axis vAxis = vAxis(face);
-        Direction.Axis nAxis = face.getAxis();
-        double u = axisValue(localHit, uAxis);
-        double v = axisValue(localHit, vAxis);
-        double n = axisValue(localHit, nAxis);
-        double epsilon = 1.0E-3D;
-
-        AABB best = null;
-        double bestDistance = Double.MAX_VALUE;
-        for (AABB box : boxes) {
-            if (u < axisMin(box, uAxis) - epsilon || u > axisMax(box, uAxis) + epsilon
-                    || v < axisMin(box, vAxis) - epsilon || v > axisMax(box, vAxis) + epsilon) {
-                continue;
-            }
-            double plane = face.getAxisDirection() == Direction.AxisDirection.POSITIVE
-                    ? axisMax(box, nAxis) : axisMin(box, nAxis);
-            double distance = Math.abs(n - plane);
-            if (distance < bestDistance) {
-                bestDistance = distance;
-                best = box;
-            }
-        }
-        return best;
-    }
-
     private static TagKey<Block> tagKey(Identifier tag) {
         return TAG_CACHE.computeIfAbsent(tag, id -> TagKey.create(Registries.BLOCK, id));
-    }
-
-    private static double clampAxis(double value, double min, double max, double inset) {
-        double low = min + inset;
-        double high = max - inset;
-        if (low > high) {
-            return (min + max) * 0.5D;
-        }
-        return Math.max(low, Math.min(high, value));
-    }
-
-    // The (u, v) basis is right-handed with the face normal, so the quad's
-    // geometric winding matches the explicit normal supplied to the renderer.
-    private static Direction.Axis uAxis(Direction face) {
-        return switch (face) {
-            case UP -> Direction.Axis.Z;
-            case DOWN -> Direction.Axis.X;
-            case SOUTH -> Direction.Axis.X;
-            case NORTH -> Direction.Axis.Y;
-            case EAST -> Direction.Axis.Y;
-            case WEST -> Direction.Axis.Z;
-        };
-    }
-
-    private static Direction.Axis vAxis(Direction face) {
-        return switch (face) {
-            case UP -> Direction.Axis.X;
-            case DOWN -> Direction.Axis.Z;
-            case SOUTH -> Direction.Axis.Y;
-            case NORTH -> Direction.Axis.X;
-            case EAST -> Direction.Axis.Z;
-            case WEST -> Direction.Axis.Y;
-        };
-    }
-
-    private static int axisIndex(Direction.Axis axis) {
-        return switch (axis) {
-            case X -> 0;
-            case Y -> 1;
-            case Z -> 2;
-        };
-    }
-
-    private static Vec3 axisUnit(Direction.Axis axis) {
-        return switch (axis) {
-            case X -> new Vec3(1.0D, 0.0D, 0.0D);
-            case Y -> new Vec3(0.0D, 1.0D, 0.0D);
-            case Z -> new Vec3(0.0D, 0.0D, 1.0D);
-        };
-    }
-
-    private static double axisValue(Vec3 vec, Direction.Axis axis) {
-        return switch (axis) {
-            case X -> vec.x;
-            case Y -> vec.y;
-            case Z -> vec.z;
-        };
-    }
-
-    private static double axisMin(AABB box, Direction.Axis axis) {
-        return switch (axis) {
-            case X -> box.minX;
-            case Y -> box.minY;
-            case Z -> box.minZ;
-        };
-    }
-
-    private static double axisMax(AABB box, Direction.Axis axis) {
-        return switch (axis) {
-            case X -> box.maxX;
-            case Y -> box.maxY;
-            case Z -> box.maxZ;
-        };
-    }
-
-    private static double axisLength(AABB box, Direction.Axis axis) {
-        return axisMax(box, axis) - axisMin(box, axis);
     }
 
     private static double randomAngle(BlockPos pos, Direction face, Vec3 localHit) {

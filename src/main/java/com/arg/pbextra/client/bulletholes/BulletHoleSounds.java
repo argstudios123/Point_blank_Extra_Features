@@ -27,24 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-/**
- * Client-side playback for material impacts.
- *
- * <p>The server selects the sound-event id and impact volume from the effective
- * per-gun/pack configuration and sends them in the existing bullet-hole impact
- * payload. The client resolves {@code max_distance} from the same configuration.
- * Each nearby client then plays it through Minecraft's normal sound engine.
- * This keeps dedicated servers free of client-audio code and avoids an
- * additional per-impact sound packet.</p>
- *
- * <p>Every sound is played with a {@link ImpactSoundInstance} positioned at the
- * exact world-space impact point with {@code relative = false}. The instance
- * itself applies a linear distance fade and stops once the configured
- * {@code max_distance} is reached, so the limit is independent of
- * {@code impact_volume}. The bundled impact OGGs are mono, which lets OpenAL
- * spatialize (pan) the source; stereo sources would otherwise be treated as
- * non-positional by OpenAL Soft.</p>
- */
+
 public final class BulletHoleSounds {
 
     private static final Logger LOGGER = LogUtils.getLogger();

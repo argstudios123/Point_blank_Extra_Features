@@ -16,13 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-/**
- * Runtime index of reusable first-person animation libraries.
- * <p>
- * The native single-string {@code firstPersonFallbackAnimations} form is left
- * entirely to Point Blank. This registry only stores the additive array form
- * (plus declared values for diagnostics) and is rebuilt on resource reload.
- */
+
 public final class AnimationLibraryRegistry {
 
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -44,11 +38,7 @@ public final class AnimationLibraryRegistry {
     }
 
 
-    /**
-     * Captures an array from the weapon JSON before Point Blank's string-only
-     * parser sees it, and removes the array so PB's {@code getAsString()} cannot
-     * throw. Native string values are left untouched for Point Blank.
-     */
+
     public static void captureBuilderJson(JsonObject json) {
         if (json == null) {
             return;
@@ -131,13 +121,7 @@ public final class AnimationLibraryRegistry {
     }
 
 
-    /**
-     * Checks the additive array libraries once per resource reload against
-     * GeckoLib's actual baked animation cache. This covers both the traditional
-     * animation roots and the optional {@code default_animations} root without
-     * producing false warnings for Point Blank extension packs. No directory
-     * scanning and no per-tick work.
-     */
+
     public static void validate(ResourceManager resources) {
         if (resources == null) {
             LOGGER.debug("Skipping reusable animation library validation: no resource manager");

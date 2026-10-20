@@ -5,16 +5,7 @@ import net.minecraft.resources.Identifier;
 import java.util.Locale;
 
 
-/**
- * Normalises the texture paths used by the custom crosshair feature.
- *
- * <p>Content packs follow Point Blank's own convention: a path such as
- * {@code textures/item/custom_crosshairs/custom_crosshair.png} lives in the
- * {@code pointblank} namespace ({@code assets/pointblank/textures/...}).
- * A namespace may be supplied explicitly, and the {@code textures/} prefix and
- * {@code .png} suffix are optional for convenience. Invalid and traversal
- * paths are rejected.</p>
- */
+
 public final class CustomCrosshairPaths {
 
     public static final String DEFAULT_NAMESPACE = "pointblank";

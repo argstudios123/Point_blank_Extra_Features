@@ -17,14 +17,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-/**
- * Resolves and caches custom crosshair textures from the client resource
- * manager, and reads their dimensions from the PNG header.
- *
- * <p>Resolution and decoding happen once per texture; failures are warned
- * about once and cached as unavailable, so a broken texture never causes a
- * per-frame lookup storm. Caches are cleared on a resource reload.</p>
- */
+
 public final class CustomCrosshairTextures {
 
     private static final Logger LOGGER = LogUtils.getLogger();

@@ -25,17 +25,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 
-/**
- * Installs the bundled custom-crosshair placeholder into Point Blank extension
- * packs that reference it.
- *
- * <p>Only directory packs containing an item JSON with a
- * {@code custom_crosshair} feature whose texture file is named
- * {@value #PLACEHOLDER_FILE_NAME} are considered. The file is written at the
- * exact resource path the feature references, for example
- * {@code <pack>/assets/pointblank/textures/item/custom_crosshairs/custom_crosshair.png}.
- * Existing files are never overwritten, and archives are left untouched.</p>
- */
+
 public final class CustomCrosshairPlaceholders {
 
     public static final String PLACEHOLDER_FILE_NAME = "custom_crosshair.png";
@@ -49,10 +39,7 @@ public final class CustomCrosshairPlaceholders {
     private CustomCrosshairPlaceholders() {
     }
 
-    /**
-     * Called during early client startup (mod construction, before the initial
-     * resource reload) and again before an in-game content reload.
-     */
+
     public static void installBundled() {
         try {
             byte[] placeholder = readBundledPlaceholder();
@@ -72,12 +59,7 @@ public final class CustomCrosshairPlaceholders {
         }
     }
 
-    /**
-     * Scans each extension directory under {@code extensionsRoot} and creates
-     * the placeholder where a matching feature references it.
-     *
-     * @return number of files created
-     */
+
     public static int install(Path extensionsRoot, byte[] placeholderPng) {
         if (extensionsRoot == null || placeholderPng == null
                 || !Files.isDirectory(extensionsRoot)) {

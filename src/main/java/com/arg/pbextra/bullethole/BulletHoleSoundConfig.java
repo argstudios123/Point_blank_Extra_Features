@@ -139,27 +139,12 @@ public final class BulletHoleSoundConfig {
         return Math.max(MIN_MAX_DISTANCE, Math.min(MAX_MAX_DISTANCE, value));
     }
 
-    /**
-     * Volume handed to a positional {@code SoundInstance}.
-     *
-     * <p>Minecraft's {@code SoundEngine} clamps the channel gain to the range
-     * 0..1, but it derives the linear attenuation distance as
-     * {@code max(instanceVolume, 1) * sound.attenuationDistance()}. Passing a
-     * configured volume above 1 therefore does <em>not</em> make the impact
-     * louder; it only enlarges the radius in which the impact is audible.
-     * Capping the instance volume at 1 keeps {@code impact_volume} as a gain
-     * control for quieter impacts without letting it extend the vanilla
-     * attenuation distance.</p>
-     */
+
     public static float engineVolume(float configuredVolume) {
         return Math.min(clampImpactVolume(configuredVolume), 1.0F);
     }
 
-    /**
-     * Resolves a sound using exact block, tag (lexicographic), then default
-     * priority. A disabled {@link SoundRef} is returned as-is so playback can
-     * distinguish it from an absent override.
-     */
+
     public SoundRef selectSound(Identifier blockId, Predicate<Identifier> tagMatcher) {
         if (!enabled) {
             return null;
@@ -180,11 +165,7 @@ public final class BulletHoleSoundConfig {
         return defaultSound;
     }
 
-    /**
-     * Applies registry availability to a selected sound. Explicitly disabled
-     * entries stay disabled; an unknown selected id falls back to the default
-     * only when that default is different and registered.
-     */
+
     public static SoundRef resolveAvailable(SoundRef selected, SoundRef fallback,
                                             Predicate<Identifier> registered) {
         if (selected == null || !selected.isEnabled()) {

@@ -1,20 +1,7 @@
 package com.arg.pbextra.crosshair;
 
 
-/**
- * Geometry for the one segment missing from Vic's Point Blank's native
- * crosshair renderer.
- *
- * <p>Point Blank 2.2.0's {@code CrosshairRenderer.renderCrosshairOverlay3}
- * draws the center patch, left, right and bottom segments. It never draws the
- * top atlas region. These constants and the mirrored top quad are copied from
- * the decompiled native method so the missing segment uses the same UV region,
- * arm span, hair width and native expansion offset as the bottom segment.</p>
- *
- * <p>Expansion is the value already computed and smoothed by VPB. This class
- * does not calculate movement, firing, sprinting, jumping, recovery or any
- * other crosshair state.</p>
- */
+//fixes  Top segment of main point blank mod
 public final class NativeCrosshairTopSegment {
 
     /** Native central-patch UV ratio from CrosshairRenderer. */
@@ -37,15 +24,7 @@ public final class NativeCrosshairTopSegment {
     private NativeCrosshairTopSegment() {
     }
 
-    /**
-     * Mirrors the native bottom quad around the crosshair center.
-     *
-     * <p>Native bottom: {@code y0 = centerY + halfInnerSide - hairWidth + offset},
-     * {@code y1 = y0 + hairLength - hairWidth}. The top is the mirror image:
-     * {@code y1 = centerY - halfInnerSide + hairWidth - offset},
-     * {@code y0 = y1 - (hairLength - hairWidth)}. Horizontal bounds are the
-     * native {@code centerX +/- halfSq} used by the bottom segment.</p>
-     */
+
     public static Segment topSegment(float centerX, float centerY, float expansion) {
         float innerSide = NATIVE_ARM_SPAN * NATIVE_RATIO;
         float halfInnerSide = innerSide * 0.5F;

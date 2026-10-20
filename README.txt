@@ -505,6 +505,16 @@ fight for the same depth value and flicker. The small outward surface offset is
 unchanged, so decals do not float farther above the block. This applies to all
 six faces and to partial shapes through the stored support box.
 
+Face placement is edge-aware. An impact that has enough room keeps the
+configured size exactly; very large configured sizes still obey the existing
+face-size cap. Near an edge or corner the decal shrinks just enough for its
+random rotation to fit the hit face, with a 50% minimum so edge hits remain
+visible. If even that minimum cannot be centred, the centre is nudged inward by
+the smallest amount that fits. The quad never crosses the supporting face, is
+never placed on a neighbouring block and keeps the same outward offset and face
+normal. Only air, fluids, empty shapes and faces too small for a legible decal
+are rejected; there is no edge-distance rejection threshold.
+
 Bullet impact particles
 -----------------------
 Separate from the persistent decal, every impact can spawn block debris. It is
